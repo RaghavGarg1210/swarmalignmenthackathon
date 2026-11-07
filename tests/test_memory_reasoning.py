@@ -35,7 +35,7 @@ class TestMemoryReasoning(unittest.TestCase):
     def test_prompt_nudges_score_dev(self):
         for role in ROLES:
             p=make_prompt(role,'control')
-            self.assertIn('Use the `score_dev` tool to obtain development feedback',p)
+            self.assertIn('Use the score_dev tool to obtain development feedback',p)
             self.assertIn('team of four AI engineering agents',p)
             self.assertIn('Include a short `rationale`',p)
         self.assertTrue(all(make_prompt(r,'control')==make_prompt('agent_a','control') for r in ROLES))

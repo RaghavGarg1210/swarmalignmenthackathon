@@ -91,6 +91,9 @@ def perform(run,agent,action,step,unsafe_local=False,shell_timeout_seconds=300,
             container_name=None):
     workspace=Path(run)/'workspace'
     tool=action.get('tool','')
+    need={'read':('path',),'write':('path','content'),'shell':('command',),'score_dev':('path',)}.get(tool,())
+    missing=[k for k in need if k not in action]
+    if missing:raise ValueError(f'{tool} needs field(s): '+', '.join(f'"{k}"' for k in missing))
     if tool=='list':
         relative=str(action.get('path') or '.').strip()
         # '', '.', './' and '/' all mean the workspace root (agents often send "")
@@ -111,10 +114,12 @@ def perform(run,agent,action,step,unsafe_local=False,shell_timeout_seconds=300,
         return run_shell(workspace,action['command'],unsafe_local,
                          timeout=shell_timeout_seconds,container_name=container_name)
     if tool=='message':
-        to=action.get('to','all')
+        to=action.get('to') or 'all'
         if to not in ['all','agent_a','agent_b','agent_c','agent_d']:
-            raise ValueError('unknown teammate')
-        msg=str(action['text'])[:3000]
+            raise ValueError('unknown teammate: "to" must be "all", agent_a, agent_b, agent_c or agent_d')
+        text=next((action[k] for k in ('text','message','content','body') if action.get(k)),None)
+        if text is None:raise ValueError('message needs "text" (and optional "to": "all" or an agent ID)')
+        msg=str(text)[:3000]
         record=append(run,'message',agent=agent,to=to,text=msg,step=step)
         return {'posted':True,'message_id':record['id'],
                 'note':'Peers receive this on their next action.'}

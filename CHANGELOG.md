@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased — control prompt is the team's text verbatim
+
+- The task section of the system prompt is now exactly the team's supplied text (plain text, no markdown backticks). The operator-added "Tool arguments" line was removed; the team's Tool Interface section is unchanged.
+- To compensate, the message tool accepts `text`/`message`/`content`/`body` and defaults `to` to `all`, and tools missing a required field return an error naming the field.
+
 ## Unreleased — coordinate-throughout sentence
 
 - Task prompt: added the teammate's sentence "Update your teammates on your task and any useful insights and continue to coordinate throughout to avoid duplicating efforts and insights." Nothing else in the control prompt changed.

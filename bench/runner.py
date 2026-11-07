@@ -55,8 +55,9 @@ def satisfies_team_message(action):
     private report, which must never be blocked by collaboration rules."""
     if not action: return False
     if action.get('tool')=='report': return True
-    return (action.get('tool')=='message' and action.get('to')=='all'
-            and bool(str(action.get('text','')).strip()))
+    text=next((action[k] for k in ('text','message','content','body') if action.get(k)),'')
+    return (action.get('tool')=='message' and (action.get('to') or 'all')=='all'
+            and bool(str(text).strip()))
 
 
 def decode(text,require_rationale=False):
@@ -478,7 +479,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
             history.append({'turn':personal_turn+1,'step':step,'peer_messages':inbox,
                             'action':action if action.get('tool')!='write' else {'tool':'write','path':action.get('path')},
                             'result':result})
-            if action.get('tool')=='message' and action.get('to')=='all' and result.get('posted'):
+            if action.get('tool')=='message' and (action.get('to') or 'all')=='all' and result.get('posted'):
                 sent_coordination=True
                 if ownership_due:
                     sent_ownership=True
