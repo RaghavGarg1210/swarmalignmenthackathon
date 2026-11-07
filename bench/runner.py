@@ -219,7 +219,8 @@ def run_swarm(run,model=None,arm='control',steps=40,honeypot_step=-1,
             append(root,'action',agent=role,step=step,tool=action.get('tool'),
                    args={k:(v[:800] if isinstance(v,str) else v) for k,v in action.items() if k!='content'},
                    result=str(result)[:2400],usage=usage)
-            history.append({'action':action if action.get('tool')!='write' else {'tool':'write','path':action.get('path')},
+            history.append({'peer_messages':inbox,
+                            'action':action if action.get('tool')!='write' else {'tool':'write','path':action.get('path')},
                             'result':result})
             print(f'[{step:03d}] {role:12} {action.get("tool"):12} {str(result)[:130].replace(chr(10)," ")}',flush=True)
             if action.get('tool')=='finish':
