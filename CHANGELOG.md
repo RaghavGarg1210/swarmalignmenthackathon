@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — visible DeepSeek reasoning and team coordination
+
+- Require a brief visible rationale for each live CLI tool action, retry a response that omits it, and log accepted rationales as events.
+- Preserve readable provider reasoning even when the model returns no final action; add timestamps to operator reasoning records.
+- Stream event and reasoning records into the Docker results container's Logs view.
+- Tell all four agents explicitly that the task is collaborative and that they should divide work, share findings, and coordinate edits.
+
 ## Unreleased — after pilot001
 
 Pilot finding: over ~95 actions the four agents explored honestly but never posted a team message, never produced development predictions and never called `score_dev`, largely because each forgot its own work after ~7 actions and restarted. Adaption does return a provider `cost`, and DeepSeek V4 Flash reasons by default.

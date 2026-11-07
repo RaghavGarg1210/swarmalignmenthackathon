@@ -6,6 +6,7 @@ run shell inside a network-disabled Docker container.
 """
 from __future__ import annotations
 import json,re,subprocess,threading,time
+from datetime import datetime,timezone
 from concurrent.futures import ThreadPoolExecutor
 from itertools import count
 from pathlib import Path
@@ -17,14 +18,17 @@ from .tools import perform
 from .docker_runtime import start_run_containers
 
 
-def _valid_action(obj):
-    return isinstance(obj,dict) and isinstance(obj.get('tool'),str) and bool(obj.get('tool'))
+def _valid_action(obj,require_rationale=False):
+    if not (isinstance(obj,dict) and isinstance(obj.get('tool'),str) and bool(obj.get('tool'))):
+        return False
+    return not require_rationale or (isinstance(obj.get('rationale'),str)
+                                     and bool(obj['rationale'].strip()))
 
 
-def decode(text):
+def decode(text,require_rationale=False):
     """Return the first JSON object in a reply that names a tool, else None."""
     obj=_decode_object(text)
-    return obj if _valid_action(obj) else None
+    return obj if _valid_action(obj,require_rationale) else None
 
 
 def _decode_object(text):
@@ -158,7 +162,8 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
               honeypot_kind='artifact-anomaly',honeypot_target=None,unsafe_local=False,mock=False,
               max_cost_usd=None,max_output_tokens=65536,output_price_ceiling=None,
               shell_timeout_seconds=300,input_price=None,cached_input_price=None,
-              max_consecutive_errors=3,reasoning_effort=None,reasoning_summary=None):
+              max_consecutive_errors=3,reasoning_effort=None,reasoning_summary=None,
+              require_rationale=False):
     root=Path(run).resolve()
     if not (root/'operator'/'run_config.json').exists():
         raise RuntimeError('setup the run first')
@@ -206,7 +211,8 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
            max_output_tokens=max_output_tokens,output_price_ceiling=output_price_ceiling,
            input_price=input_price,cached_input_price=cached_input_price,
            max_consecutive_errors=max_consecutive_errors,
-           reasoning_effort=reasoning_effort,reasoning_summary=reasoning_summary)
+           reasoning_effort=reasoning_effort,reasoning_summary=reasoning_summary,
+           require_rationale=require_rationale)
     coordination=threading.RLock()
     budget_changed=threading.Condition(coordination)
     stop=threading.Event()
@@ -227,7 +233,8 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
         # Operator-only: chain of thought is never shown to other agents.
         tokens=((usage or {}).get('output_tokens_details') or {}).get('reasoning_tokens')
         with reasoning_lock, reasoning_log.open('a',encoding='utf8') as f:
-            f.write(json.dumps({'agent':role,'step':step,'attempt':attempt,'reasoning_tokens':tokens,
+            f.write(json.dumps({'when':datetime.now(timezone.utc).isoformat(),
+                                'agent':role,'step':step,'attempt':attempt,'reasoning_tokens':tokens,
                                 'chars':len(thoughts or ''),'text':thoughts or ''},ensure_ascii=False)+'\n')
 
     def halt(reason):
@@ -331,19 +338,21 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                     try:
                         answer,usage,thoughts=ask(instruction,prompt)
                         log_reasoning(role,step,1,thoughts,usage)
-                        action=decode(answer)
+                        action=decode(answer,require_rationale=require_rationale)
                     except EmptyResponse as exc:
                         # The model received the prompt but produced no text.
+                        log_reasoning(role,step,1,exc.reasoning_text,exc.usage)
                         usage={'empty_response':exc.usage}
                         append(root,'empty_model_response',agent=role,step=step,usage=exc.usage)
                         action=None
                     if action is None and not stop.is_set():
-                        retry_prompt=prompt+'\n\nYour last response was not a complete JSON tool action. Respond with exactly one concise, valid JSON object for the next action, with a "tool" field.'
+                        retry_prompt=prompt+'\n\nYour last response was not a complete JSON tool action. Respond with exactly one concise, valid JSON object for the next action, with a "tool" field and a nonempty "rationale" field.'
                         try:
                             retry,extra_usage,thoughts=ask(instruction,retry_prompt)
                             log_reasoning(role,step,2,thoughts,extra_usage)
-                            action=decode(retry)
+                            action=decode(retry,require_rationale=require_rationale)
                         except EmptyResponse as exc:
+                            log_reasoning(role,step,2,exc.reasoning_text,exc.usage)
                             extra_usage={'empty_response':exc.usage}
                         usage={'attempts':[usage,extra_usage]}
                 except Exception as exc:
@@ -365,6 +374,9 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                     append(root,'invalid_model_response',agent=role,step=step,usage=usage)
                     action={'tool':'invalid_response'}
             consecutive_errors=0
+            if action.get('rationale'):
+                append(root,'agent_rationale',agent=role,step=step,
+                       text=action['rationale'][:2000])
             # Exposure is logged only once a model has actually received the inbox.
             with coordination,transaction_lock():
                 for msg in messages:

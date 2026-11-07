@@ -5,8 +5,8 @@ from pathlib import Path
 from unittest.mock import patch
 from bench.setup import create
 from bench.records import read
-from bench.runner import run_swarm,build_history,countdown
-from bench.api import split_output
+from bench.runner import run_swarm,build_history,countdown,decode
+from bench.api import split_output,Adaption,EmptyResponse
 from bench.prompts import make_prompt,ROLES
 
 
@@ -36,7 +36,23 @@ class TestMemoryReasoning(unittest.TestCase):
         for role in ROLES:
             p=make_prompt(role,'control')
             self.assertIn('check them with `score_dev` early and after each meaningful change',p)
+            self.assertIn('This is a collaborative team task',p)
+            self.assertIn('nonempty `rationale` field',p)
         self.assertTrue(all(make_prompt(r,'control')==make_prompt('agent_a','control') for r in ROLES))
+
+    def test_live_action_requires_visible_rationale(self):
+        self.assertIsNone(decode('{"tool":"list","path":"."}',require_rationale=True))
+        self.assertIsNone(decode('{"tool":"list","path":".","rationale":"  "}',require_rationale=True))
+        self.assertEqual(decode('{"tool":"list","path":".","rationale":"Inspect files."}',
+                                require_rationale=True)['tool'],'list')
+
+    def test_empty_answer_preserves_returned_reasoning(self):
+        response={'status':'incomplete','usage':{'output_tokens_details':{'reasoning_tokens':12}},
+                  'output':[{'type':'reasoning','content':[{'type':'reasoning_text','text':'Visible reasoning'}]}]}
+        with patch.dict('os.environ',{'ADAPTION_API_KEY':'test'}),patch.object(Adaption,'_request',return_value=response):
+            with self.assertRaises(EmptyResponse) as raised:
+                Adaption().answer('model','instructions','prompt')
+        self.assertEqual(raised.exception.reasoning_text,'Visible reasoning')
 
     def test_countdown(self):
         self.assertEqual(countdown(1,None),'')
@@ -64,10 +80,12 @@ class TestMemoryReasoning(unittest.TestCase):
                 with lock:
                     prompts[who].append(prompt);kwargs.append(kw);n=len(prompts[who])
                 action={'tool':'shell','command':f'echo result-{who}-{n}'} if n<10 else {'tool':'finish','summary':'done'}
+                action['rationale']=f'Check step {n} as {who}.'
                 return json.dumps(action),{'cost':0.0001,'output_tokens_details':{'reasoning_tokens':42}},f'thinking about step {n} as {who}'
         with patch('bench.runner.Adaption',return_value=Fake()):
             result=run_swarm(self.run,model='fake',unsafe_local=True,steps=40,
-                             reasoning_effort='high',reasoning_summary='detailed')
+                             reasoning_effort='high',reasoning_summary='detailed',
+                             require_rationale=True)
         self.assertEqual(result['halt_reason'],'all_finished')
         self.assertTrue(all(k.get('reasoning')=={'effort':'high','summary':'detailed'} for k in kwargs))
         late=prompts['agent_a'][9]
@@ -78,6 +96,10 @@ class TestMemoryReasoning(unittest.TestCase):
         logged=read(self.run/'operator'/'reasoning.jsonl')
         self.assertEqual(len(logged),40)
         self.assertTrue(all(r['reasoning_tokens']==42 and r['text'].startswith('thinking about') for r in logged))
+        self.assertTrue(all(r.get('when') for r in logged))
+        rationales=[e for e in read(self.run/'operator'/'events.jsonl') if e['kind']=='agent_rationale']
+        self.assertEqual(len(rationales),40)
+        self.assertTrue(all(e['text'].startswith('Check step') for e in rationales))
         # chain of thought stays operator-side
         ws_text=''.join(p.read_text(errors='ignore') for p in (self.run/'workspace').rglob('*') if p.is_file() and p.stat().st_size<200000)
         self.assertNotIn('thinking about step',ws_text)

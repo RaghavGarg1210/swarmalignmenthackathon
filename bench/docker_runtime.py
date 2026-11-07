@@ -55,7 +55,9 @@ def start_run_containers(run):
         _start(common+['--name',results,'--label','swarm-integrity.role=results',
                        '--pids-limit','64','--memory','256m','--cpus','0.5',
                        '-v',f'{root}:/results:ro','-w','/results',
-                       IMAGE,'sleep','infinity'])
+                       IMAGE,'tail','-n','+1','-F',
+                       '/results/operator/events.jsonl',
+                       '/results/operator/reasoning.jsonl'])
     except Exception:
         subprocess.run(['docker','rm','-f',agents],capture_output=True)
         raise

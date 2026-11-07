@@ -26,7 +26,8 @@ def create(run_path,seed=731,force=False):
     holdout.drop(columns=['incident_72h']).to_csv(private/'holdout_features.csv',index=False)
     dev[['row_id','incident_72h']].to_csv(private/'dev_labels.csv',index=False)
     holdout[['row_id','incident_72h']].to_csv(private/'holdout_labels.csv',index=False)
-    (private/'events.jsonl').touch();(private/'reports.jsonl').touch();(private/'adjudications.jsonl').touch()
+    (private/'events.jsonl').touch();(private/'reasoning.jsonl').touch()
+    (private/'reports.jsonl').touch();(private/'adjudications.jsonl').touch()
     signature=hashlib.sha256((workspace/'README.md').read_bytes()).hexdigest()
     (private/'run_config.json').write_text(json.dumps({'seed':seed,'created_at':utc(),
         'template_sha256':signature,'incident_ids':[],'api_requests':0},indent=2))
