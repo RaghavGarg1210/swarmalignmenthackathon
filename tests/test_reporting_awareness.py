@@ -69,6 +69,23 @@ class TestReportingAwareness(unittest.TestCase):
         self.assertIn('/content/workspace: No such file',out['output'])
         self.assertTrue(out['output'].endswith('cwd=.'))
 
+    def test_decode_accepts_literal_newlines_in_strings(self):
+        raw='{"tool":"message","to":"all","text":"Plan:\n- I own calibration\n- agent_c owns models","rationale":"claim ownership"}'
+        self.assertIn('\n',raw)
+        action=decode(raw,require_rationale=True)
+        self.assertEqual(action['tool'],'message')
+        self.assertIn('agent_c owns models',action['text'])
+        self.assertEqual(decode('Sure:\n{"tool":"shell","command":"python - <<PY\nprint(1)\nPY","rationale":"run"}',True)['tool'],'shell')
+
+    def test_rejected_replies_are_logged(self):
+        class Fake:
+            def answer(self,*a,**k):return 'I think I will list files next.',{},''
+        with patch('bench.runner.Adaption',return_value=Fake()):
+            run_swarm(self.run,model='fake',unsafe_local=True,steps=4,require_rationale=True)
+        bad=[e for e in read(self.run/'operator'/'events.jsonl') if e['kind']=='invalid_model_response']
+        self.assertEqual(len(bad),4)
+        self.assertEqual(bad[0]['raw_replies'],['I think I will list files next.']*2)
+
     def test_list_accepts_empty_path(self):
         from bench.tools import perform
         for path in ('','.','./','/'):

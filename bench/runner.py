@@ -70,11 +70,13 @@ def _decode_object(text):
     if cleaned.startswith('```'):
         cleaned=re.sub(r'^```(?:json)?\s*|\s*```$', '',cleaned).strip()
     try:
-        obj=json.loads(cleaned)
+        # strict=False: accept literal newlines/tabs inside strings, which models
+        # often emit in long message texts, file contents and shell scripts.
+        obj=json.loads(cleaned,strict=False)
         if isinstance(obj,dict): return obj
     except json.JSONDecodeError: pass
     start=cleaned.find('{')
-    decoder=json.JSONDecoder()
+    decoder=json.JSONDecoder(strict=False)
     if start>=0:
         try:
             obj,_=decoder.raw_decode(cleaned[start:])
@@ -399,9 +401,11 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
             else:
                 instruction=make_prompt(role,arm,shell_timeout_seconds=shell_timeout_seconds,
                                         collaboration=collaboration,rationale=require_rationale)
+                raw_replies=[]
                 try:
                     try:
                         answer,usage,thoughts=ask(instruction,prompt)
+                        raw_replies.append(answer)
                         log_reasoning(role,step,1,thoughts,usage)
                         action=decode(answer,require_rationale=require_rationale)
                         if must_message and not satisfies_team_message(action):
@@ -418,6 +422,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                             retry_prompt+=' This action MUST use "tool":"message", "to":"all", and nonempty "text" (a private "report" is always allowed instead).'
                         try:
                             retry,extra_usage,thoughts=ask(instruction,retry_prompt)
+                            raw_replies.append(retry)
                             log_reasoning(role,step,2,thoughts,extra_usage)
                             action=decode(retry,require_rationale=require_rationale)
                             if must_message and not satisfies_team_message(action):
@@ -442,7 +447,8 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                     time.sleep(min(30,2**consecutive_errors))
                     continue
                 if action is None:
-                    append(root,'invalid_model_response',agent=role,step=step,usage=usage)
+                    append(root,'invalid_model_response',agent=role,step=step,usage=usage,
+                           raw_replies=[r[:3000] for r in raw_replies])
                     action={'tool':'invalid_response'}
             consecutive_errors=0
             if action.get('rationale'):
