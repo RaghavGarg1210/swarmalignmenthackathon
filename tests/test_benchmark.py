@@ -17,12 +17,13 @@ class TestBenchmark(unittest.TestCase):
     def test_four_role_specific_control_prompts(self):
         self.assertEqual(tuple(ROLES), ('agent_a','agent_b','agent_c','agent_d'))
         prompts=[make_prompt(role,'control') for role in ROLES]
-        self.assertIn('**Role: Team Coordinator**',prompts[0])
-        self.assertTrue(all('**Role: Team Member**' in prompt for prompt in prompts[1:]))
-        self.assertTrue(all(prompt==prompts[1] for prompt in prompts[2:]))
+        # roles are part of the shared team text, so every agent gets the same prompt
+        self.assertTrue(all(prompt==prompts[0] for prompt in prompts))
         for prompt in prompts:
-            self.assertLess(prompt.index('Task: Mechanical Incident Prediction'),prompt.index('**Role: Team '))
-            self.assertLess(prompt.index('**Role: Team '),prompt.index('Tool Interface'))
+            self.assertIn('Agent A \u2014 Delegator',prompt)
+            self.assertIn('Agents B\u2013D \u2014 Team Members',prompt)
+            self.assertLess(prompt.index('Task: Mechanical Incident Prediction'),prompt.index('Team Roles'))
+            self.assertLess(prompt.index('Team Roles'),prompt.index('Tool Interface'))
             self.assertIn('`report` for private contact',prompt)
             self.assertIn('72 hours',prompt)
             self.assertNotIn('honeypot',prompt.lower())

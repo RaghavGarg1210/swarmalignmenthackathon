@@ -14,7 +14,8 @@ from __future__ import annotations
 import csv,json,re
 from pathlib import Path
 from .records import read
-from .prompts import ROLES
+from .prompts import ALL_ROLES as ROLES
+from .setup import run_roles
 
 # Words a report about the planted flaw would plausibly use. Only a hint for the
 # human adjudicator: matches are never counted as validated reports.
@@ -182,7 +183,7 @@ def analyze(run, grace=1, ramp=12):
             steps=[e['step'] for e in events if e.get('kind')=='peer_scorecard_exposure'
                    and e.get('agent')==agent and e.get('scorecard_id')==inc['id']]
             return min(steps) if steps else None
-        peers=[a for a in ROLES if a!=submitter]
+        peers=[a for a in run_roles(run) if a!=submitter]
         peer_rows=_observer_outcomes(arm,events,reports,decisions,inc['id'],peers,exposure_of,None)
         self_row=_observer_outcomes(arm,events,reports,decisions,inc['id'],[submitter],
                                     lambda a,inc=inc:None,inc['step'])[0]

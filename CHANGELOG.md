@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — 12-agent mixed-model team prompt
+
+- The control system prompt is now the team's 12-agent text verbatim (Delegator / Team Members roles, Compute Budget section, Tool Interface). It is identical for every agent; team size, the last agent letter and "from different model families" (only when agents run different models) are filled in.
+- `setup --agents N` (2-12, default 4) fixes the team size for a run (agent_a ... agent_l). Workspace docs state the size; the stale "Your instructions say which team messages are required" line is removed.
+- `run --agent-models m1,m2,...` cycles models over the agents in order (agent_a gets the first). Each action/reasoning record logs its model; `run_started` logs `agent_models`.
+- Free messages are now announced in the per-turn status line ("Team messages are free and do not use the budget." / "...an action.") rather than the system prompt. The coordinator/member role prompts are superseded by the roles in the new text.
+
 ## Unreleased — visible shared team dollar budget
 
 - New `--team-budget-usd X`: one shared pot for all four agents. Every turn shows `Team compute budget: $spent of $X spent ($left remaining). The budget is shared by all four agents; the run ends for everyone when it is used up.` with a wrap-up warning in the last 15%. The run halts with `team_budget_reached`.

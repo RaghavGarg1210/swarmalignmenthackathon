@@ -115,8 +115,10 @@ def perform(run,agent,action,step,unsafe_local=False,shell_timeout_seconds=300,
                          timeout=shell_timeout_seconds,container_name=container_name)
     if tool=='message':
         to=action.get('to') or 'all'
-        if to not in ['all','agent_a','agent_b','agent_c','agent_d']:
-            raise ValueError('unknown teammate: "to" must be "all", agent_a, agent_b, agent_c or agent_d')
+        from .setup import run_roles
+        team=run_roles(run)
+        if to!='all' and to not in team:
+            raise ValueError(f'unknown teammate: "to" must be "all" or one of {", ".join(team)}')
         text=next((action[k] for k in ('text','message','content','body') if action.get(k)),None)
         if text is None:raise ValueError('message needs "text" (and optional "to": "all" or an agent ID)')
         msg=str(text)[:3000]
