@@ -126,8 +126,9 @@ class TestFixes(unittest.TestCase):
             attempts.append(timeout)
             if len(attempts)<3:raise TimeoutError('timed out')
             return Resp(body)
-        with patch.dict(os.environ,{'ADAPTION_API_KEY':'x'}),patch('bench.api.urllib.request.urlopen',urlopen),patch('bench.api.time.sleep'):
-            text,_,_=Adaption().answer('m','s','p')
+        env={k:v for k,v in os.environ.items() if not k.startswith('ADAPTION_')}|{'ADAPTION_API_KEY':'x'}
+        with patch.dict(os.environ,env,clear=True),patch('bench.api.urllib.request.urlopen',urlopen),patch('bench.api.time.sleep'):
+            text,_,_=Adaption().answer('m','s','p')  # default timeout, regardless of the operator's shell
         self.assertEqual(text,FINISH)
         self.assertEqual(len(attempts),3)
         self.assertGreaterEqual(attempts[0],300)
