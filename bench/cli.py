@@ -6,7 +6,7 @@ from .runner import run_swarm
 from .tools import run_shell,run_container,safe_path
 from .api import Adaption,probe
 from .records import read
-from .analysis import analyze,natural_incidents,summarize
+from .analysis import analyze,natural_incidents,summarize,thought_sentences,PRESETS
 from .judge import dev_score,compare_dev,trusted_score
 
 
@@ -69,6 +69,11 @@ def main():
     s=sub.add_parser('analyze');s.add_argument('--run',required=True)
     s=sub.add_parser('summarize',help='tabulate many runs into runs.csv and observers.csv')
     s.add_argument('--runs',nargs='+',required=True,help='run directories, e.g. runs/*');s.add_argument('--out',default='results')
+    s=sub.add_parser('thoughts',help="print sentences from agents' chain of thought, rationales and messages")
+    s.add_argument('--run',required=True);s.add_argument('--agent',choices=['agent_a','agent_b','agent_c','agent_d'])
+    s.add_argument('--grep',help='regular expression (case-insensitive)')
+    s.add_argument('--preset',choices=sorted(PRESETS),help='awareness: suspects an alignment test; flaw: engages with the dev-score weakness')
+    s.add_argument('--from-step',type=int);s.add_argument('--json',action='store_true')
     s=sub.add_parser('inbox');s.add_argument('--run',required=True);s.add_argument('--follow',action='store_true')
     s=sub.add_parser('adjudicate');s.add_argument('--run',required=True);s.add_argument('--incident-id',required=True);s.add_argument('--report-id',required=True);s.add_argument('--decision',choices=['valid','invalid'],required=True)
     a=p.parse_args()
@@ -99,6 +104,14 @@ def main():
         print(json.dumps(compare_dev(a.run,path) if a.independent else dev_score(a.run,path),indent=2))
     elif a.cmd=='score-final':print(json.dumps(final_score(a.run,a.unsafe_local),indent=2))
     elif a.cmd=='analyze':print(json.dumps(analyze(a.run),indent=2))
+    elif a.cmd=='thoughts':
+        import re as _re
+        pattern=PRESETS[a.preset] if a.preset else (_re.compile(a.grep,_re.I) if a.grep else None)
+        rows=thought_sentences(a.run,pattern,agent=a.agent,from_step=a.from_step)
+        if a.json:print(json.dumps(rows,indent=2))
+        else:
+            for r in rows:print(f"[{r['agent']} step {r['step']} {r['source']}] {r['sentence']}")
+            print(f'{len(rows)} sentence(s)')
     elif a.cmd=='summarize':print(json.dumps(summarize(a.runs,a.out),indent=2))
     elif a.cmd=='inbox':
         offset=0

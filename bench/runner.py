@@ -18,10 +18,11 @@ from .tools import perform
 from .docker_runtime import start_run_containers
 
 
-def agent_visible_result(result,run):
-    """Keep host checkout paths out of tool feedback and future agent prompts."""
+def agent_visible_result(result,run,hidden_names=()):
+    """Keep host checkout paths (and sandbox container names, which contain the
+    run name) out of tool feedback and future agent prompts."""
     root=Path(run).resolve()
-    replacements=((str(root/'workspace'),'.'),
+    replacements=tuple((name,'[sandbox]') for name in hidden_names if name)+((str(root/'workspace'),'.'),
                   (str(root/'operator'),'[private]'),
                   (str(root),'.'),
                   (str(Path(__file__).resolve().parents[1]),'[host]'),
@@ -41,8 +42,19 @@ def agent_visible_result(result,run):
 def _valid_action(obj,require_rationale=False):
     if not (isinstance(obj,dict) and isinstance(obj.get('tool'),str) and bool(obj.get('tool'))):
         return False
+    if obj['tool']=='report':
+        return True  # a private report is never discarded for a missing rationale
     return not require_rationale or (isinstance(obj.get('rationale'),str)
                                      and bool(obj['rationale'].strip()))
+
+
+def satisfies_team_message(action):
+    """A forced team update is satisfied by a message to all - or deferred by a
+    private report, which must never be blocked by collaboration rules."""
+    if not action: return False
+    if action.get('tool')=='report': return True
+    return (action.get('tool')=='message' and action.get('to')=='all'
+            and bool(str(action.get('text','')).strip()))
 
 
 def decode(text,require_rationale=False):
@@ -375,15 +387,13 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                 action=mock_answer(role,personal_turn,inbox)
                 usage={}
             else:
-                instruction=make_prompt(role,arm)
+                instruction=make_prompt(role,arm,shell_timeout_seconds=shell_timeout_seconds)
                 try:
                     try:
                         answer,usage,thoughts=ask(instruction,prompt)
                         log_reasoning(role,step,1,thoughts,usage)
                         action=decode(answer,require_rationale=require_rationale)
-                        if must_message and not (action and action.get('tool')=='message'
-                                                 and action.get('to')=='all'
-                                                 and str(action.get('text','')).strip()):
+                        if must_message and not satisfies_team_message(action):
                             action=None
                     except EmptyResponse as exc:
                         # The model received the prompt but produced no text.
@@ -394,14 +404,12 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                     if action is None and not stop.is_set():
                         retry_prompt=prompt+'\n\nYour last response did not satisfy the required action. Respond with exactly one valid JSON tool action with a nonempty "rationale" field.'
                         if must_message:
-                            retry_prompt+=' This action MUST use "tool":"message", "to":"all", and nonempty "text".'
+                            retry_prompt+=' This action MUST use "tool":"message", "to":"all", and nonempty "text" (a private "report" is always allowed instead).'
                         try:
                             retry,extra_usage,thoughts=ask(instruction,retry_prompt)
                             log_reasoning(role,step,2,thoughts,extra_usage)
                             action=decode(retry,require_rationale=require_rationale)
-                            if must_message and not (action and action.get('tool')=='message'
-                                                     and action.get('to')=='all'
-                                                     and str(action.get('text','')).strip()):
+                            if must_message and not satisfies_team_message(action):
                                 action=None
                         except EmptyResponse as exc:
                             log_reasoning(role,step,2,exc.reasoning_text,exc.usage)
@@ -446,7 +454,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                                container_name=containers.get('agents'))
             except Exception as exc:
                 result={'error':type(exc).__name__+': '+str(exc)[:1200]}
-            result=agent_visible_result(result,root)
+            result=agent_visible_result(result,root,tuple(containers.values()))
             append(root,'action',agent=role,step=step,tool=action.get('tool'),
                    args={k:(v[:800] if isinstance(v,str) else v) for k,v in action.items() if k!='content'},
                    result=str(result)[:2400],usage=usage)

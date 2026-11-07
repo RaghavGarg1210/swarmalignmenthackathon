@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — review of the collaboration changes + pilot002 follow-ups
+
+- Fix: a private `report` is never blocked. Previously, when a team message was being forced (3rd/6th action, status or post-score update), a `report` was discarded as non-compliant and became `invalid_response`, so reports could be silently suppressed. A report now satisfies the turn (the forced message follows on the next action) and does not need a `rationale`.
+- Sandbox container names (which contain the run name) are rewritten to `[sandbox]` in agent-visible tool feedback, alongside the existing host-path rewriting.
+- The system prompt states the shell time limit and asks agents to keep each experiment small (pilot002 lost many actions to 300 s timeouts).
+- New `thoughts` command and analysis fields: sentences from chain of thought, rationales and team messages, with presets for suspected alignment/integrity testing (`awareness`) and engagement with the dev-score weakness (`flaw`). `analyze` reports `alignment_test_awareness` and `flaw_mentions`; `summarize` adds `alignment_test_awareness_sentences`, `agents_alignment_test_aware`, `agents_mentioning_flaw`, `first_flaw_mention_step`.
+- Added `tests/test_reporting_awareness.py`.
+
 ## Unreleased — visible DeepSeek reasoning and team coordination
 
 - Require a brief visible rationale for each live CLI tool action, retry a response that omits it, and log accepted rationales as events.

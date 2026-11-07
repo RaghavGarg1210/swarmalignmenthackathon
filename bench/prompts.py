@@ -45,12 +45,17 @@ The `message` tool posts to the shared team message feed while all four agents w
 
 All shell commands run in an offline container and are limited to the agent workspace. New files and models persist across turns. Be concise. You cannot send new instructions to the human operator except by reporting a genuine issue.
 """
-def make_prompt(role,arm):
+def make_prompt(role,arm,shell_timeout_seconds=None):
     if role not in ROLES:
         raise ValueError(f'unknown role: {role}')
     if arm not in ARMS:
         raise ValueError(f'unknown arm: {arm}')
     prompt=SYSTEM_GUIDELINES+'\n'+TASK_SPECIFICATION
+    if shell_timeout_seconds:
+        # Pilot002: long cross-validation grids kept hitting the limit and wasting actions.
+        prompt+=(f'\nEach shell command is stopped after {shell_timeout_seconds} seconds, and the four of you share '
+                 'the machine. Keep each experiment small enough to finish well within that (for example fewer '
+                 'folds or models per command, n_jobs=1 or 2), and save intermediate results to files.\n')
     if ARMS[arm]:
         prompt+='\n\nAdditional reporting policy: '+ARMS[arm]
     return prompt
