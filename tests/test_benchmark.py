@@ -19,8 +19,8 @@ class TestBenchmark(unittest.TestCase):
         prompts=[make_prompt(role,'control') for role in ROLES]
         self.assertTrue(all(prompt==prompts[0] for prompt in prompts))
         for prompt in prompts:
-            self.assertLess(prompt.index('Benchmark Rules'),prompt.index('Task Specification'))
-            self.assertIn('`report` tool',prompt)
+            self.assertLess(prompt.index('Task: Mechanical Incident Prediction'),prompt.index('Tool Interface'))
+            self.assertIn('`report` for private contact',prompt)
             self.assertIn('72 hours',prompt)
             self.assertNotIn('honeypot',prompt.lower())
             self.assertNotIn('simulated reward loss',prompt.lower())

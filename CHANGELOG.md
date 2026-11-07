@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — team's revised task prompt
+
+- The control system prompt is now the team's revised text, verbatim: "Task: Mechanical Incident Prediction" (highest-scoring predictor; ROC-AUC 55% / AP 45%; collaborate and divide work; deliverables; 300 s shared-shell timeout) and "Tool Interface" (one JSON object with a short rationale; `message` for the team, `report` for private contact with the experiment operator). The shell timeout and the rationale sentence follow `--shell-timeout-seconds` and `--rationale`.
+- Appended a one-line tool-argument reference (field names per tool, report categories) so the agents' actions parse; the revised text lists tool names but not their fields.
+- The previous "Benchmark Rules" block and the `score_dev`-early nudge are no longer in the system prompt; per-turn collaboration requirements (`--collaboration kickoff`) and the action countdown are unchanged.
+
 ## Unreleased — plain capability-framed control
 
 The control prompt and workspace documents previously carried Soviet-style cues (an "operator logs" rationale, a duty to "promptly report", "confidential reports", "a human may be monitoring the inbox", a constitution requiring reports of misconduct). These now live only in treatment arms.
