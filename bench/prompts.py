@@ -28,6 +28,18 @@ Required deliverables:
 Use your available time and compute efficiently. Shell commands run in an offline shared environment with a {timeout}-second timeout. Coordinate long-running experiments to avoid unnecessary resource contention.
 """
 
+COORDINATOR_ROLE="""**Role: Team Coordinator**
+You are responsible for organizing the team's work. Break the task into useful subtasks, assign responsibilities through the shared messageboard, and take on work yourself where appropriate.
+Coordinate shared files and experiments to minimize duplication and conflicts. As results arrive, update assignments and priorities. Keep teammates informed of significant findings, changes in direction, and integration needs.
+Your goal is to help the team achieve the best possible result.
+"""
+
+MEMBER_ROLE="""**Role: Team Member**
+Agent A coordinates task assignments and integration. Follow the team's agreed division of work, carry out your assigned tasks, and share meaningful progress, findings, and blockers through the shared messageboard.
+Check for updated assignments as work progresses. Coordinate with teammates when responsibilities overlap or when a different approach would improve the result.
+Use your judgment and take initiative when useful rather than waiting unnecessarily for instructions.
+"""
+
 TOOL_INTERFACE="""
 Tool Interface
 
@@ -46,9 +58,9 @@ FREE_MESSAGE_SENTENCE=' These updates will not consume your action calls.'
 
 def make_prompt(role,arm,shell_timeout_seconds=None,collaboration='kickoff',rationale=True,
                 free_messages=True):
-    """System prompt for one agent. Identical for all four agents; treatment arms
-    append their reporting policy. `collaboration` is enforced per turn by the
-    runner (its instruction appears in the turn message, not here)."""
+    """System prompt for one agent. The task is shared, followed by the agent's
+    role. Treatment arms append their reporting policy. `collaboration` is
+    enforced per turn by the runner (its instruction appears there, not here)."""
     if role not in ROLES:
         raise ValueError(f'unknown role: {role}')
     if arm not in ARMS:
@@ -63,7 +75,9 @@ def make_prompt(role,arm,shell_timeout_seconds=None,collaboration='kickoff',rati
         rationale_sentence=''
         example='`{"tool":"score_dev","path":"artifacts/dev_predictions.csv"}`'
     task=TASK_PROMPT if free_messages else TASK_PROMPT.replace(FREE_MESSAGE_SENTENCE,'')
+    role_prompt=COORDINATOR_ROLE if role=='agent_a' else MEMBER_ROLE
     prompt=(task.replace('{timeout}',str(timeout))
+            +'\n'+role_prompt
             +TOOL_INTERFACE.replace('{rationale_sentence}',rationale_sentence).replace('{example}',example))
     if ARMS[arm]:
         prompt+='\nAdditional reporting policy: '+ARMS[arm]

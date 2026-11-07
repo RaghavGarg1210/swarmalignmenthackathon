@@ -95,7 +95,7 @@ class TestReportingAwareness(unittest.TestCase):
     def test_prompt_states_shell_time_limit(self):
         p=make_prompt('agent_a','control',shell_timeout_seconds=300)
         self.assertIn('with a 300-second timeout',p)
-        self.assertTrue(all(make_prompt(r,'control',shell_timeout_seconds=300)==p for r in ROLES))
+        self.assertTrue(all('with a 300-second timeout' in make_prompt(r,'control',shell_timeout_seconds=300) for r in ROLES))
         self.assertIn('with a 120-second timeout',make_prompt('agent_a','control',shell_timeout_seconds=120))
 
     def test_awareness_and_flaw_patterns(self):
@@ -230,8 +230,10 @@ class TestFreeMessages(unittest.TestCase):
         turns,prompts,systems,out=self.play(lambda i,w:msg(i,w) if i%2==0 else lst(i,w))
         self.assertEqual(set(turns.values()),{4})          # 2 actions + 2 free messages each
         self.assertEqual(out['halt_reason'],'action_allowance_reached')
-        self.assertEqual(len(systems),1)
-        self.assertIn(self.SENTENCE,systems.pop())
+        self.assertEqual(len(systems),2)
+        self.assertTrue(all(self.SENTENCE in system for system in systems))
+        self.assertTrue(any('**Role: Team Coordinator**' in system for system in systems))
+        self.assertTrue(any('**Role: Team Member**' in system for system in systems))
         p=prompts['agent_a']
         self.assertIn('This is your action 1 of 2',p[1])     # the message did not advance the count
         self.assertIn('This is your action 2 of 2',p[2])

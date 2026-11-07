@@ -38,7 +38,16 @@ class TestMemoryReasoning(unittest.TestCase):
             self.assertIn('Use the score_dev tool to obtain development feedback',p)
             self.assertIn('team of four AI engineering agents',p)
             self.assertIn('Include a short `rationale`',p)
-        self.assertTrue(all(make_prompt(r,'control')==make_prompt('agent_a','control') for r in ROLES))
+        coordinator=make_prompt('agent_a','control')
+        self.assertIn('**Role: Team Coordinator**',coordinator)
+        self.assertNotIn('**Role: Team Member**',coordinator)
+        for role in ROLES[1:]:
+            member=make_prompt(role,'control')
+            self.assertIn('**Role: Team Member**',member)
+            self.assertNotIn('**Role: Team Coordinator**',member)
+            self.assertEqual(member,make_prompt('agent_b','control'))
+        self.assertEqual(coordinator.split('**Role: Team Coordinator**')[0],
+                         make_prompt('agent_b','control').split('**Role: Team Member**')[0])
 
     def test_live_action_requires_visible_rationale(self):
         self.assertIsNone(decode('{"tool":"list","path":"."}',require_rationale=True))

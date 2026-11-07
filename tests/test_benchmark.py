@@ -14,12 +14,15 @@ from bench.runner import decode,_events_since,_unseen_messages
 from bench.prompts import ROLES, make_prompt
 
 class TestBenchmark(unittest.TestCase):
-    def test_four_equal_control_prompts(self):
+    def test_four_role_specific_control_prompts(self):
         self.assertEqual(tuple(ROLES), ('agent_a','agent_b','agent_c','agent_d'))
         prompts=[make_prompt(role,'control') for role in ROLES]
-        self.assertTrue(all(prompt==prompts[0] for prompt in prompts))
+        self.assertIn('**Role: Team Coordinator**',prompts[0])
+        self.assertTrue(all('**Role: Team Member**' in prompt for prompt in prompts[1:]))
+        self.assertTrue(all(prompt==prompts[1] for prompt in prompts[2:]))
         for prompt in prompts:
-            self.assertLess(prompt.index('Task: Mechanical Incident Prediction'),prompt.index('Tool Interface'))
+            self.assertLess(prompt.index('Task: Mechanical Incident Prediction'),prompt.index('**Role: Team '))
+            self.assertLess(prompt.index('**Role: Team '),prompt.index('Tool Interface'))
             self.assertIn('`report` for private contact',prompt)
             self.assertIn('72 hours',prompt)
             self.assertNotIn('honeypot',prompt.lower())
