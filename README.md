@@ -41,6 +41,17 @@ The default run uses **four equal agents** (`agent_a`, `agent_b`, `agent_c`, `ag
 
 Any agent can call `message` to post to the shared team feed while peers are working. Posts and inbox reads are synchronized so concurrent writes do not corrupt the log. Each worker reads new messages at the start of its next action; delivered messages remain in that agent's recent private history for subsequent actions. A post made after a peer's current action begins reaches that peer on a later action. Agents may also read and write files in `shared/` at the same time; use separate files or coordinate edits through messages when changing the same file.
 
+For a live run, the host starts two named offline containers visible in Docker Desktop. `swarm-agents-*` holds the shared workspace at `/workspace`; the four workers issue overlapping `docker exec` shell actions inside it. `swarm-results-*` mounts the complete run read-only at `/results`, including operator logs and reports for human inspection. Agent processes cannot access the results container or its private labels. Container names appear in `run_started` and the run result. The host runner retains the API key and independent evaluator outside the agent container.
+
+```bash
+docker ps --filter label=swarm-integrity.role=agents
+docker ps --filter label=swarm-integrity.role=results
+docker exec AGENT_CONTAINER ls /workspace/artifacts
+docker exec RESULTS_CONTAINER ls /results/operator
+```
+
+The containers remain running for inspection after the trial. Remove a run's two named containers when finished reviewing it.
+
 For **live-model** trials, build Docker first:
 
 ```bash
@@ -57,7 +68,7 @@ python -m bench.cli score-final --run runs/live001
 
 With a shared cost budget, the live run has no arbitrary action count limit: agents continue until they finish or the budget is reached. `--steps` is optional for experiments that specifically need an equal action allowance; `--steps 80` would give each agent 20 actions. If neither `--steps` nor a cost budget is given, the runner rejects the run. The workers are asynchronous: a fast agent can take its next action while a peer is still waiting for a model response or shell command. Global step numbers record action *start* order, while the event timestamps show actual completion and message delivery. Scorecard notices are delivered to each eligible agent on its next action; the runner tracks message IDs so an out-of-order completion cannot silently skip a notice. Run events record the execution mode, worker count, optional per-agent allowance, model, budget, starts, actions, exposures, and stop reason.
 
-`--max-output-tokens` is a per-response ceiling. `--max-cost-usd` is a shared budget across all four workers, not a per-agent allowance. With a budget, `--output-price-ceiling` is required and the runner reserves estimated output cost plus $0.01 for input for each in-flight request, then reconciles with provider-reported cost. This is a soft budget because actual provider pricing and input cost can exceed the estimate. For the DeepSeek example, 1.2 means a conservative $1.20 per million output tokens; choose a ceiling appropriate to the selected model and provider. API keys must exist only in the operator environment, **never in the agent repository**. The offline Docker container has no network, drops Linux capabilities, uses a read-only base filesystem and mounts only the agent workspace. `--unsafe-local` is **for trusted mock development only**.
+`--max-output-tokens` is a per-response ceiling. `--max-cost-usd` is a shared budget across all four workers, not a per-agent allowance. With a budget, `--output-price-ceiling` is required and the runner reserves estimated output cost plus $0.01 for input for each in-flight request, then reconciles with provider-reported cost. This is a soft budget because actual provider pricing and input cost can exceed the estimate. For the DeepSeek example, 1.2 means a conservative $1.20 per million output tokens; choose a ceiling appropriate to the selected model and provider. API keys must exist only in the operator environment, **never in the agent repository**. The offline agent container has no network, drops Linux capabilities, uses a read-only base filesystem and mounts only the agent workspace. `--unsafe-local` is **for trusted mock development only**.
 
 Each sandbox shell command has a separate 300-second timeout by default so a stalled command cannot hold a worker indefinitely without using model tokens. This is independent of the trial cost budget. Set `--shell-timeout-seconds 0` to disable it, or choose another limit for your workload.
 

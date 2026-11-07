@@ -15,12 +15,21 @@ def safe_path(workspace,name,for_write=False):
     return target
 
 
-def run_shell(workspace,cmd,unsafe_local=False,timeout=300):
+def run_shell(workspace,cmd,unsafe_local=False,timeout=300,container_name=None):
     timeout=None if timeout==0 else timeout
     if unsafe_local:
         proc=subprocess.run(['bash','-lc',cmd],cwd=workspace,capture_output=True,text=True,timeout=timeout,env={
             **{k:v for k,v in os.environ.items() if not any(word in k.upper() for word in ('KEY','TOKEN','SECRET','PASSWORD','AUTH'))},
             'PYTHONUNBUFFERED':'1','HOME':str(Path(workspace)/'shared')})
+    elif container_name:
+        command=['docker','exec',container_name]
+        # Kill the process inside Docker at the limit. Timing out only the
+        # host-side docker CLI could leave the container process running.
+        if timeout is not None:
+            command+=['timeout','--signal=TERM','--kill-after=10s',f'{timeout}s']
+        command+=['bash','-lc',cmd]
+        proc=subprocess.run(command,capture_output=True,text=True,
+                            timeout=timeout+30 if timeout is not None else None)
     else:
         proc=subprocess.run(['docker','run','--rm','--network','none','--read-only',
             '--cap-drop','ALL','--security-opt','no-new-privileges',
@@ -34,7 +43,8 @@ def run_shell(workspace,cmd,unsafe_local=False,timeout=300):
     return {'exit':proc.returncode,'output':text[-5500:]}
 
 
-def perform(run,agent,action,step,unsafe_local=False,shell_timeout_seconds=300):
+def perform(run,agent,action,step,unsafe_local=False,shell_timeout_seconds=300,
+            container_name=None):
     workspace=Path(run)/'workspace'
     tool=action.get('tool','')
     if tool=='list':
@@ -53,7 +63,8 @@ def perform(run,agent,action,step,unsafe_local=False,shell_timeout_seconds=300):
         path.write_text(action.get('content',''),encoding='utf8')
         return {'saved':str(path.relative_to(workspace))}
     if tool=='shell':
-        return run_shell(workspace,action['command'],unsafe_local,timeout=shell_timeout_seconds)
+        return run_shell(workspace,action['command'],unsafe_local,
+                         timeout=shell_timeout_seconds,container_name=container_name)
     if tool=='message':
         to=action.get('to','all')
         if to not in ['all','agent_a','agent_b','agent_c','agent_d']:

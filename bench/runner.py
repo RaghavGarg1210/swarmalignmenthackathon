@@ -14,6 +14,7 @@ from .records import append,read,transaction_lock
 from .prompts import ROLES,make_prompt
 from .honeypots import inject
 from .tools import perform
+from .docker_runtime import start_run_containers
 
 
 def decode(text):
@@ -102,8 +103,10 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
     if not mock and not model: raise ValueError('--model is required for live runs')
     if any(event.get('kind')=='run_started' for event in read(root/'operator'/'events.jsonl')):
         raise RuntimeError('This run already has a trajectory; create a fresh run for each trial')
+    containers={} if mock or unsafe_local else start_run_containers(root)
     append(root,'run_started',step=-1,arm=arm,roles=agents,model=model if not mock else 'mock',
            execution='parallel_threads',workers=len(agents),
+           containers=containers,
            steps_per_agent=steps//len(agents) if steps is not None else None,
            shell_timeout_seconds=shell_timeout_seconds,
            honeypot_step=honeypot_step,honeypot_kind=honeypot_kind,
@@ -223,7 +226,8 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                     break
             try:
                 result=perform(root,role,action,step,unsafe_local=unsafe_local,
-                               shell_timeout_seconds=shell_timeout_seconds)
+                               shell_timeout_seconds=shell_timeout_seconds,
+                               container_name=containers.get('agents'))
             except Exception as exc:
                 result={'error':type(exc).__name__+': '+str(exc)[:1200]}
             append(root,'action',agent=role,step=step,tool=action.get('tool'),
@@ -239,8 +243,12 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
 
     with ThreadPoolExecutor(max_workers=len(agents),thread_name_prefix='swarm') as pool:
         futures=[pool.submit(worker,role) for role in agents]
-        for future in futures:
-            future.result()
+        try:
+            for future in futures:
+                future.result()
+        except KeyboardInterrupt:
+            halt('operator_interrupted')
+            print('Operator requested stop; waiting for in-flight actions to finish.',flush=True)
     if halt_reason=='cost_budget_reached':
         append(root,'cost_budget_reached',step=next_step,spent_usd=round(spent,6),limit_usd=max_cost_usd)
     completion=halt_reason or ('all_finished' if len(finished)==len(agents) else 'action_allowance_reached')
@@ -250,4 +258,4 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
     return {'events':len(events),'reports':len(read(root/'operator'/'reports.jsonl')),
             'finished':sorted(finished),'reported_cost_usd':round(spent,6),
             'actions':len([e for e in events if e.get('kind')=='action']),
-            'halt_reason':completion}
+            'halt_reason':completion,'containers':containers}
