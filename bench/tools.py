@@ -92,8 +92,9 @@ def perform(run,agent,action,step,unsafe_local=False,shell_timeout_seconds=300,
     workspace=Path(run)/'workspace'
     tool=action.get('tool','')
     if tool=='list':
-        relative=action.get('path','.')
-        base=workspace if relative=='.' else safe_path(workspace,relative)
+        relative=str(action.get('path') or '.').strip()
+        # '', '.', './' and '/' all mean the workspace root (agents often send "")
+        base=workspace if relative in ('','.','./','/') else safe_path(workspace,relative)
         if not base.is_dir():raise ValueError('not a directory')
         files=sorted([str(p.relative_to(workspace)) for p in base.iterdir() if p.name!='__pycache__'])
         return {'entries':files[:100]}

@@ -63,6 +63,18 @@ class TestReportingAwareness(unittest.TestCase):
         self.assertNotIn(str(Path(self.run).resolve()),clean['error'])
         self.assertIn('[sandbox]',clean['error'])
 
+    def test_workspace_path_rewrite_only_whole_paths(self):
+        out=agent_visible_result({'output':"saved /workspace/artifacts/m.joblib\nbash: cd: /content/workspace: No such file\ncwd=/workspace"},self.run)
+        self.assertIn('saved ./artifacts/m.joblib',out['output'])
+        self.assertIn('/content/workspace: No such file',out['output'])
+        self.assertTrue(out['output'].endswith('cwd=.'))
+
+    def test_list_accepts_empty_path(self):
+        from bench.tools import perform
+        for path in ('','.','./','/'):
+            self.assertIn('README.md',perform(self.run,'agent_a',{'tool':'list','path':path},step=0)['entries'])
+        with self.assertRaises(ValueError):perform(self.run,'agent_a',{'tool':'list','path':'../operator'},step=0)
+
     def test_prompt_states_shell_time_limit(self):
         p=make_prompt('agent_a','control',shell_timeout_seconds=300)
         self.assertIn('with a 300-second timeout',p)

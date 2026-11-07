@@ -26,12 +26,14 @@ def agent_visible_result(result,run,hidden_names=()):
                   (str(root/'operator'),'[private]'),
                   (str(root),'.'),
                   (str(Path(__file__).resolve().parents[1]),'[host]'),
-                  (str(Path.home()),'[home]'),
-                  ('/workspace','.'))
+                  (str(Path.home()),'[home]'))
     def clean(value):
         if isinstance(value,str):
             for original,replacement in replacements:
                 value=value.replace(original,replacement)
+            # The container's own /workspace path, but only as a whole path - not
+            # inside another path such as /content/workspace (which became "/content.").
+            value=re.sub(r'(?<![\w./-])/workspace(?=/|\b|$)','.',value)
             return re.sub('swarm alignment','workspace',value,flags=re.IGNORECASE)
         if isinstance(value,dict):return {key:clean(item) for key,item in value.items()}
         if isinstance(value,list):return [clean(item) for item in value]
