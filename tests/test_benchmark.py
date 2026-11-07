@@ -1,4 +1,6 @@
-import tempfile, unittest
+import tempfile, threading, time, unittest
+from concurrent.futures import ThreadPoolExecutor
+from unittest.mock import patch
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -8,7 +10,7 @@ from bench.tools import perform,safe_path
 from bench.honeypots import inject
 from bench.records import read
 from bench.analysis import analyze
-from bench.runner import decode,_events_since
+from bench.runner import decode,_events_since,_unseen_messages
 from bench.prompts import ROLES, make_prompt
 
 class TestBenchmark(unittest.TestCase):
@@ -83,6 +85,9 @@ class TestBenchmark(unittest.TestCase):
         events=read(self.run/'operator'/'events.jsonl')
         started=next(e for e in events if e.get('kind')=='run_started')
         self.assertEqual(started['roles'],list(ROLES))
+        self.assertEqual(started['execution'],'parallel_threads')
+        self.assertEqual(started['workers'],4)
+        self.assertEqual(started['steps_per_agent'],3)
         self.assertEqual(started['honeypot_step'],-1)
         self.assertIsNone(started['honeypot_target'])
         self.assertFalse(any(e.get('kind')=='honeypot_exposure' for e in events))
@@ -98,7 +103,7 @@ class TestBenchmark(unittest.TestCase):
                    if e.get('kind')=='peer_scorecard_exposure']
         self.assertTrue(any(e.get('agent')=='agent_c' for e in exposures))
         outcome=analyze(self.run)
-        self.assertEqual(outcome['incidents'][0]['exposed_at'],6)
+        self.assertGreaterEqual(outcome['incidents'][0]['exposed_at'],4)
         # A logged observation opportunity does not imply a valid report.
         self.assertEqual(len(read(self.run/'operator'/'reports.jsonl')),0)
         self.assertEqual(outcome['arm'],'duty')
@@ -121,5 +126,51 @@ class TestBenchmark(unittest.TestCase):
         self.assertLess(outcome['incidents'][0]['simulated_loss'],1)
     def test_decode(self):
         self.assertEqual(decode('```json\n{"tool":"list","path":"."}\n```')['tool'],'list')
+        self.assertIsNone(decode('{"tool":"write","content":"unfinished'))
+
+    def test_four_model_requests_overlap(self):
+        from bench.runner import run_swarm
+        barrier=threading.Barrier(4,timeout=5)
+        class FakeAdaption:
+            def answer(self,*args,**kwargs):
+                barrier.wait()
+                return '{"tool":"finish","summary":"done"}',{'cost':0.001}
+        with patch('bench.runner.Adaption',return_value=FakeAdaption()):
+            result=run_swarm(self.run,model='fake',unsafe_local=True,steps=4,
+                             max_cost_usd=1.0,output_price_ceiling=1.2)
+        events=read(self.run/'operator'/'events.jsonl')
+        self.assertEqual(result['actions'],4)
+        self.assertEqual(result['finished'],list(ROLES))
+        self.assertEqual(result['reported_cost_usd'],0.004)
+        self.assertEqual(len([e for e in events if e['kind']=='turn_started']),4)
+        self.assertEqual(len([e for e in events if e['kind']=='action']),4)
+        first_action=next(i for i,e in enumerate(events) if e['kind']=='action')
+        self.assertEqual(len([e for e in events[:first_action] if e['kind']=='turn_started']),4)
+
+    def test_team_feed_accepts_concurrent_posts_and_reads(self):
+        start=threading.Barrier(5,timeout=5)
+        def post(role):
+            start.wait()
+            return perform(self.run,role,{'tool':'message','to':'all','text':f'{role} status'},step=1)
+        def observe():
+            start.wait()
+            deadline=time.monotonic()+5
+            while time.monotonic()<deadline:
+                messages=[e for e in read(self.run/'operator'/'events.jsonl') if e['kind']=='message']
+                if len(messages)==4: return messages
+                time.sleep(.001)
+            self.fail('reader did not observe all four posts')
+        with ThreadPoolExecutor(max_workers=5) as pool:
+            futures=[pool.submit(post,role) for role in ROLES]
+            reader=pool.submit(observe)
+            receipts=[f.result() for f in futures]
+            messages=reader.result()
+        self.assertTrue(all(r['posted'] for r in receipts))
+        self.assertEqual(len({r['message_id'] for r in receipts}),4)
+        self.assertEqual({m['agent'] for m in messages},set(ROLES))
+        for role in ROLES:
+            inbox=_unseen_messages(messages,role,set())
+            self.assertEqual(len(inbox),3)
+            self.assertNotIn(role,{m['agent'] for m in inbox})
 
 if __name__=='__main__':unittest.main()

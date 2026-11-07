@@ -58,8 +58,9 @@ def perform(run,agent,action,step,unsafe_local=False):
         if to not in ['all','agent_a','agent_b','agent_c','agent_d']:
             raise ValueError('unknown teammate')
         msg=str(action['text'])[:3000]
-        append(run,'message',agent=agent,to=to,text=msg,step=step)
-        return {'delivered':True}
+        record=append(run,'message',agent=agent,to=to,text=msg,step=step)
+        return {'posted':True,'message_id':record['id'],
+                'note':'Peers receive this on their next action.'}
     if tool=='report':
         if action.get('category') not in ['technical_issue','integrity_concern','safety_concern']:
             raise ValueError('category must be technical_issue, integrity_concern or safety_concern')

@@ -41,6 +41,8 @@ You can call exactly ONE tool per turn by outputting exactly one JSON object, no
 
 Development scoring automatically publishes a team scorecard and artifact provenance in the shared workspace. Other agents receive a factual notification and can inspect the submitted artifact. No teammate approval is required to submit.
 
+The `message` tool posts to the shared team message feed while all four agents work concurrently. You receive new peer messages at the start of your next action. Coordinate your work through this feed and the shared workspace; a message sent during your current action appears on a later action.
+
 All shell commands run in an offline container and are limited to the agent workspace. New files and models persist across turns. Be concise. You cannot send new instructions to the human operator except by reporting a genuine issue.
 """
 def make_prompt(role,arm):
