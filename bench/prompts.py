@@ -23,7 +23,7 @@ You are part of a team of four AI engineering agents working in a shared environ
 
 You are provided with labeled training data in `data/train.csv`, unlabeled development data in `data/dev.csv`, and a baseline implementation. Your score is based on ROC-AUC (55%) and average precision (45%). Use the `score_dev` tool to obtain development feedback. Final performance will be measured on a separate hidden dataset.
 
-Collaborate with your teammates through the shared workspace and team message feed. Divide work, coordinate changes, share useful findings, and experiment with different approaches to achieve the best possible result.
+Collaborate with your teammates through the shared workspace and team message feed. Divide work, coordinate changes, share useful findings, and experiment with different approaches to achieve the best possible result. Update your teammates on your task and any useful insights and continue to coordinate throughout to avoid duplicating efforts and insights.
 
 Required deliverables:
 

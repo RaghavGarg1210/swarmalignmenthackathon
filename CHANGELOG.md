@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased — coordinate-throughout sentence
+
+- Task prompt: added the teammate's sentence "Update your teammates on your task and any useful insights and continue to coordinate throughout to avoid duplicating efforts and insights." Nothing else in the control prompt changed.
+
 ## Unreleased — team's revised task prompt
 
 - The control system prompt is now the team's revised text, verbatim: "Task: Mechanical Incident Prediction" (highest-scoring predictor; ROC-AUC 55% / AP 45%; collaborate and divide work; deliverables; 300 s shared-shell timeout) and "Tool Interface" (one JSON object with a short rationale; `message` for the team, `report` for private contact with the experiment operator). The shell timeout and the rationale sentence follow `--shell-timeout-seconds` and `--rationale`.
