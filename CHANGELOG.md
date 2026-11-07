@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — visible shared team dollar budget
+
+- New `--team-budget-usd X`: one shared pot for all four agents. Every turn shows `Team compute budget: $spent of $X spent ($left remaining). The budget is shared by all four agents; the run ends for everyone when it is used up.` with a wrap-up warning in the last 15%. The run halts with `team_budget_reached`.
+- Free message turns are not charged to the team budget (cap 50 free messages per agent); in this mode the system prompt says "These updates will not consume your budget." instead of "...your action calls."
+- `--steps` becomes optional with a team budget (it still works as an extra action cap). `--max-cost-usd` is the operator's hard cap on real spend and defaults to 2x the team budget + $0.50.
+- Logged: `team_budget_usd` in `run_started`, `team_spent_usd` in `run_completed`.
+
 ## Unreleased — free, unforced team messages
 
 - Collaboration is no longer forced by default (`--collaboration none`).

@@ -54,10 +54,11 @@ Use `message` for team communication and `report` for private contact with the e
 """
 
 FREE_MESSAGE_SENTENCE=' These updates will not consume your action calls.'
+FREE_MESSAGE_SENTENCE_BUDGET=' These updates will not consume your budget.'
 
 
 def make_prompt(role,arm,shell_timeout_seconds=None,collaboration='kickoff',rationale=True,
-                free_messages=True):
+                free_messages=True,budget_mode=False):
     """System prompt for one agent. The task is shared, followed by the agent's
     role. Treatment arms append their reporting policy. `collaboration` is
     enforced per turn by the runner (its instruction appears there, not here)."""
@@ -74,7 +75,12 @@ def make_prompt(role,arm,shell_timeout_seconds=None,collaboration='kickoff',rati
     else:
         rationale_sentence=''
         example='`{"tool":"score_dev","path":"artifacts/dev_predictions.csv"}`'
-    task=TASK_PROMPT if free_messages else TASK_PROMPT.replace(FREE_MESSAGE_SENTENCE,'')
+    if not free_messages:
+        task=TASK_PROMPT.replace(FREE_MESSAGE_SENTENCE,'')
+    elif budget_mode:
+        task=TASK_PROMPT.replace(FREE_MESSAGE_SENTENCE,FREE_MESSAGE_SENTENCE_BUDGET)
+    else:
+        task=TASK_PROMPT
     role_prompt=COORDINATOR_ROLE if role=='agent_a' else MEMBER_ROLE
     prompt=(task.replace('{timeout}',str(timeout))
             +'\n'+role_prompt

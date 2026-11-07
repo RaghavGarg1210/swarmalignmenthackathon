@@ -264,4 +264,61 @@ class TestFreeMessages(unittest.TestCase):
         self.assertIn("'--free-messages',choices=['on','off'],default='on'",src)
 
 
+class TestTeamBudget(unittest.TestCase):
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory()
+        self.run=create(Path(self.tmp.name)/'run',seed=2)
+    def tearDown(self):self.tmp.cleanup()
+
+    def play(self,script,budget=0.002,cost=0.0001):
+        turns={};prompts={};systems=set();lock=threading.Lock()
+        class Fake:
+            def answer(self,model,system,prompt,**kw):
+                who=agent_of(prompt)
+                with lock:
+                    i=turns.get(who,0);turns[who]=i+1;prompts.setdefault(who,[]).append(prompt);systems.add(system)
+                return json.dumps(script(i,who)),{'cost':cost},''
+        with patch('bench.runner.Adaption',return_value=Fake()):
+            out=run_swarm(self.run,model='fake',unsafe_local=True,require_rationale=True,free_messages=True,
+                          team_budget_usd=budget,output_price_ceiling=1.0)
+        return turns,prompts,systems,out
+
+    def test_budget_ends_run_and_is_visible(self):
+        turns,prompts,systems,out=self.play(lambda i,w:{'tool':'list','path':'.','rationale':'look'})
+        self.assertEqual(out['halt_reason'],'team_budget_reached')
+        self.assertGreaterEqual(out['team_spent_usd'],0.002)
+        self.assertLessEqual(sum(turns.values()),20+4)          # at most one in-flight turn per agent over
+        p=prompts['agent_a']
+        self.assertIn('Team compute budget: $0.000 of $0.002 spent ($0.002 remaining)',p[0])
+        self.assertIn('shared by all four agents',p[0])
+        self.assertNotIn('This is your action',p[0])            # no action countdown in budget mode
+        self.assertTrue(any('nearly used up' in x for ps in prompts.values() for x in ps))
+        sysp=systems.pop()
+        self.assertIn('These updates will not consume your budget.',sysp)
+        self.assertNotIn('action calls',sysp)
+        ev=read(self.run/'operator'/'events.jsonl')
+        started=next(e for e in ev if e['kind']=='run_started')
+        self.assertEqual(started['team_budget_usd'],0.002)
+        self.assertTrue(started['free_messages'])
+        self.assertTrue(any(e['kind']=='team_budget_reached' for e in ev))
+
+    def test_messages_are_not_charged(self):
+        msg=lambda i,w:{'tool':'message','to':'all','text':f'{w} {i}','rationale':'share'}
+        lst=lambda i,w:{'tool':'list','path':'.','rationale':'look'}
+        turns,prompts,_,out=self.play(lambda i,w:msg(i,w) if i%2==0 else lst(i,w))
+        acts=[e for e in read(self.run/'operator'/'events.jsonl') if e['kind']=='action']
+        charged=sum(e['tool']!='message' for e in acts)
+        self.assertLessEqual(charged,20+4)
+        self.assertGreaterEqual(sum(e['tool']=='message' for e in acts),charged-4)
+        # spend shown after a message equals the spend before it
+        p=prompts['agent_a']
+        self.assertEqual(p[0].split('Team compute budget: ')[1][:6],p[1].split('Team compute budget: ')[1][:6])
+
+    def test_validation(self):
+        with self.assertRaises(ValueError):run_swarm(self.run,mock=True,unsafe_local=True,team_budget_usd=1)
+        with self.assertRaises(ValueError):run_swarm(self.run,model='m',unsafe_local=True,team_budget_usd=2,max_cost_usd=1,output_price_ceiling=1)
+        src=(ROOT/'bench'/'cli.py').read_text()
+        self.assertIn("'--team-budget-usd'",src)
+
+
 if __name__=='__main__':unittest.main()

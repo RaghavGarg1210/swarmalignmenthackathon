@@ -52,7 +52,8 @@ def main():
     s.add_argument('--steps',type=int,help='optional total action allowance; must be divisible by 4, shared equally among concurrent agents');s.add_argument('--honeypot-step',type=int,default=-1)
     s.add_argument('--honeypot-kind',choices=['peer-shortcut','peer-suppression','artifact-anomaly'],default='artifact-anomaly')
     s.add_argument('--honeypot-target',choices=['agent_a','agent_b','agent_c','agent_d'])
-    s.add_argument('--max-cost-usd',type=float,help='shared estimated USD budget for all four agents')
+    s.add_argument('--max-cost-usd',type=float,help='operator hard cap on real spend (default with --team-budget-usd: 2x the team budget + $0.50)')
+    s.add_argument('--team-budget-usd',type=float,help='visible shared team budget in USD: shown to agents every turn; the run ends when it is used up (free messages are not charged)')
     s.add_argument('--max-output-tokens',type=int,default=65536,help='maximum output tokens per model response')
     s.add_argument('--output-price-ceiling',type=float,help='conservative USD per 1M output tokens; used for budget reservations and for cost when the provider reports none')
     s.add_argument('--input-price',type=float,help='USD per 1M input tokens; only used if the provider omits cost (Adaption currently reports it)')
@@ -104,7 +105,8 @@ def main():
                                    reasoning_summary=a.reasoning_summary,
                                    require_rationale=(a.rationale=='memo') and not a.mock,
                                    collaboration='none' if a.mock else a.collaboration,
-                                   free_messages=(a.free_messages=='on') and not a.mock),indent=2))
+                                   free_messages=(a.free_messages=='on') and not a.mock,
+                                   team_budget_usd=a.team_budget_usd),indent=2))
     elif a.cmd=='score-dev':
         path=safe_path(Path(a.run)/'workspace',a.predictions)
         print(json.dumps(compare_dev(a.run,path) if a.independent else dev_score(a.run,path),indent=2))

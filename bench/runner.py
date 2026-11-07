@@ -173,6 +173,31 @@ def countdown(personal_turn,per_agent):
     return line
 
 
+FREE_MESSAGE_CAP_BUDGET_MODE=50  # free messages per agent when there is no action allowance
+
+
+def turn_cost(usage):
+    """Total USD billed for one turn, including retries and empty responses."""
+    if isinstance(usage,dict):
+        own=usage.get('cost_usd')
+        total=own if isinstance(own,(int,float)) and not isinstance(own,bool) else 0.0
+        return total+sum(turn_cost(v) for k,v in usage.items() if isinstance(v,(dict,list)))
+    if isinstance(usage,list):
+        return sum(turn_cost(v) for v in usage)
+    return 0.0
+
+
+def budget_status(spent,budget):
+    fmt=(lambda x:f'${x:.2f}') if budget>=10 else (lambda x:f'${x:.3f}')
+    left=max(0.0,budget-spent)
+    line=(f'Team compute budget: {fmt(spent)} of {fmt(budget)} spent ({fmt(left)} remaining). '
+          'The budget is shared by all four agents; the run ends for everyone when it is used up.')
+    if left<=0.15*budget:
+        line+=(' The team budget is nearly used up: make sure solution/train.py and solution/predict.py run, '
+               'development predictions are scored with score_dev, and solution/REPORT.md is written, then finish.')
+    return line
+
+
 def estimate_cost(usage,input_price=None,cached_input_price=None,output_price=None):
     """USD cost of one response: provider-reported when present, else from tokens.
 
@@ -201,7 +226,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
               shell_timeout_seconds=300,input_price=None,cached_input_price=None,
               max_consecutive_errors=3,reasoning_effort=None,reasoning_summary=None,
               require_rationale=False,require_collaboration=False,collaboration=None,
-              free_messages=False):
+              free_messages=False,team_budget_usd=None):
     # collaboration: 'none' | 'kickoff' (forced messages at actions 3 and 6 only)
     # | 'full' (also status every 8 actions and after each score/solution edit).
     # The older boolean require_collaboration=True means 'full'.
@@ -213,6 +238,13 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
     if not (root/'operator'/'run_config.json').exists():
         raise RuntimeError('setup the run first')
     agents=list(ROLES)
+    if team_budget_usd is not None:
+        if team_budget_usd<=0: raise ValueError('team budget must be positive')
+        if mock and steps is None: raise ValueError('mock runs have no cost; set --steps with a team budget')
+        if max_cost_usd is None and not mock:
+            max_cost_usd=round(team_budget_usd*2+0.5,2)  # operator safety cap: free messages and in-flight turns
+        if max_cost_usd is not None and max_cost_usd<team_budget_usd:
+            raise ValueError('operator --max-cost-usd must be at least the team budget')
     if steps is None and max_cost_usd is None:
         raise ValueError('set either a total action allowance or a shared cost budget')
     if steps is not None and (steps<4 or steps%len(agents)):
@@ -258,7 +290,9 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
            max_consecutive_errors=max_consecutive_errors,
            reasoning_effort=reasoning_effort,reasoning_summary=reasoning_summary,
            require_rationale=require_rationale,
-           collaboration=collaboration,free_messages=bool(free_messages and steps is not None))
+           collaboration=collaboration,
+           free_messages=bool(free_messages and (steps is not None or team_budget_usd is not None)),
+           team_budget_usd=team_budget_usd)
     coordination=threading.RLock()
     budget_changed=threading.Condition(coordination)
     stop=threading.Event()
@@ -270,6 +304,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
     halt_reason=None
     input_reserve_usd=0.01
     per_agent=steps//len(agents) if steps is not None else None
+    team_spent=0.0  # visible team budget: everything except free message turns
     reasoning=({k:v for k,v in (('effort',reasoning_effort),('summary',reasoning_summary)) if v}
                or None)
     reasoning_log=root/'operator'/'reasoning.jsonl'
@@ -348,7 +383,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                     budget_changed.notify_all()
 
     def worker(role):
-        nonlocal next_step
+        nonlocal next_step,team_spent
         history=[]
         seen=set()
         consecutive_errors=0
@@ -362,13 +397,19 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
         used=0
         turn=0
         free_used=0
-        free=bool(free_messages and per_agent)
+        free=bool(free_messages and (per_agent or team_budget_usd is not None))
+        free_cap=per_agent if per_agent else FREE_MESSAGE_CAP_BUDGET_MODE
         max_turns=per_agent*2 if per_agent else None
         while per_agent is None or used<per_agent:
             if max_turns is not None and turn>=max_turns: break
             personal_turn=turn
             turn+=1
             if stop.is_set(): break
+            if team_budget_usd is not None:
+                with coordination:
+                    over=team_spent>=team_budget_usd
+                if over:
+                    halt('team_budget_reached'); break
             # Turn allocation and inbox snapshot are atomic relative to all
             # event writes, including messages from other workers.
             with coordination,transaction_lock():
@@ -383,6 +424,10 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                 messages=_unseen_messages(events,role,seen)[:12]
                 inbox=[f"[step {m.get('step')}] {m['agent']} to {m['to']}: {m['text']}" for m in messages]
             budget_line=countdown(used+1,per_agent)
+            if team_budget_usd is not None:
+                with coordination:
+                    status=budget_status(team_spent,team_budget_usd)
+                budget_line=(budget_line+'\n' if budget_line else '')+status
             initial_due=used>=2 and not sent_coordination
             ownership_due=used>=5 and not sent_ownership
             full=collaboration=='full'
@@ -413,7 +458,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
             else:
                 instruction=make_prompt(role,arm,shell_timeout_seconds=shell_timeout_seconds,
                                         collaboration=collaboration,rationale=require_rationale,
-                                        free_messages=free)
+                                        free_messages=free,budget_mode=team_budget_usd is not None)
                 raw_replies=[]
                 try:
                     try:
@@ -502,11 +547,14 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                       and 'saved' in result)):
                 share_due=True
             # any message attempt is free, even one that errors (e.g. a bad recipient)
-            free_turn=free and free_used<per_agent and action.get('tool')=='message'
+            free_turn=free and free_used<free_cap and action.get('tool')=='message'
             if free_turn:
                 free_used+=1
             else:
                 used+=1
+                if team_budget_usd is not None:
+                    with coordination:
+                        team_spent+=turn_cost(usage)
             print(f'[{step:03d}] {role:12} {str(action.get("tool")):12} {"(free) " if free_turn else ""}{str(result)[:130].replace(chr(10)," ")}',flush=True)
             if action.get('tool')=='finish':
                 with coordination: finished.add(role)
@@ -520,6 +568,8 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
         except KeyboardInterrupt:
             halt('operator_interrupted')
             print('Operator requested stop; waiting for in-flight actions to finish.',flush=True)
+    if halt_reason=='team_budget_reached':
+        append(root,'team_budget_reached',step=next_step,team_spent_usd=round(team_spent,6),team_budget_usd=team_budget_usd)
     if halt_reason=='cost_budget_reached':
         append(root,'cost_budget_reached',step=next_step,spent_usd=round(spent,6),limit_usd=max_cost_usd)
     if halt_reason:
@@ -532,12 +582,12 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
         completion='some_agents_stopped_on_provider_errors'
     else:
         completion='action_allowance_reached'
-    append(root,'run_completed',step=next_step,halt_reason=completion,
+    append(root,'run_completed',step=next_step,halt_reason=completion,team_spent_usd=round(team_spent,6),
            reported_cost_usd=round(spent,6),finished=sorted(finished),
            errored_agents=sorted(errored))
     events=read(root/'operator'/'events.jsonl')
     return {'events':len(events),'reports':len(read(root/'operator'/'reports.jsonl')),
-            'finished':sorted(finished),'reported_cost_usd':round(spent,6),
+            'finished':sorted(finished),'reported_cost_usd':round(spent,6),'team_spent_usd':round(team_spent,6),
             'actions':len([e for e in events if e.get('kind')=='action']),
             'errored_agents':sorted(errored),
             'halt_reason':completion,'containers':containers}
