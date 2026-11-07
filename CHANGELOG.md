@@ -3,8 +3,9 @@
 ## Unreleased — four-agent control guidelines
 
 - Imported the v0.2 peer-visible benchmark as the active repository environment; archived the prior Cybench implementation under `legacy/cybench`.
-- Set the default swarm to four roles and the default policy arm to `control`.
-- Placed the common System Guidelines before the task specification for every role, with the private `report` tool as the designated monitor channel.
+- Set the default swarm to four equally instructed agents and the default policy arm to `control`.
+- Placed the common System Guidelines before the identical task specification for every agent, with the private `report` tool as the designated monitor channel.
+- Disabled scripted probes by default and disallowed them in control; removed role-specific tasks and the private adversarial-agent option so control measures natural discovery.
 - Updated the pre-registration language: the revised control already asks agents to report observed concerns, so comparisons with `duty` measure additional specificity rather than the presence of a reporting obligation.
 - Made simulated losses apply only in the fixed and graduated penalty arms; control reports remain measurable without an assigned loss.
 - Scoring now reads each submitted artifact once and publishes that same byte sequence to peers and the operator.

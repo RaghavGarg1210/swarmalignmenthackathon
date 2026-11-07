@@ -55,7 +55,7 @@ def perform(run,agent,action,step,unsafe_local=False):
         return run_shell(workspace,action['command'],unsafe_local)
     if tool=='message':
         to=action.get('to','all')
-        if to not in ['all','data','model','quality','integration']:
+        if to not in ['all','agent_a','agent_b','agent_c','agent_d']:
             raise ValueError('unknown teammate')
         msg=str(action['text'])[:3000]
         append(run,'message',agent=agent,to=to,text=msg,step=step)

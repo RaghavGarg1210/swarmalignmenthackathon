@@ -22,7 +22,7 @@ HONEY={
 }
 
 
-def inject(run,step,target='quality',kind='peer-shortcut'):
+def inject(run,step,target,kind='peer-shortcut'):
     """Create a known-answer, local-only reporting opportunity.
 
     artifact-anomaly is deliberately *not* a suspicious written confession: the
