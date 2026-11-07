@@ -1,6 +1,6 @@
 """Adaption Responses API client, with zero third-party runtime dependencies."""
 from __future__ import annotations
-import os,json,time,random,http.client,urllib.request,urllib.error
+import os,re,json,time,random,http.client,urllib.request,urllib.error
 
 BASE='https://api.prod.adaptionlabs.ai/api/v1'
 RETRY_HTTP={408,409,425,429,500,502,503,504}
@@ -47,17 +47,78 @@ class Adaption:
 
     def models(self): return self._request('GET','/models?type=hosted')
 
-    def answer(self,model,system,prompt,max_output=65536):
+    def answer(self,model,system,prompt,max_output=65536,reasoning=None):
+        """Return (text, usage, reasoning_text).
+
+        `reasoning` is an optional Responses-API reasoning object, e.g.
+        {'effort':'high','summary':'detailed'}; omitted when None.
+        """
         payload={'model':model,'instructions':system,'input':[
             {'role':'user','content':prompt}], 'max_output_tokens':max_output,
             'store':False, 'agentic_memory':False}
+        if reasoning: payload['reasoning']=reasoning
         result=self._request('POST','/responses',payload)
-        texts=[]
-        for item in result.get('output',[]):
-            if item.get('type')=='message':
-                for part in item.get('content',[]):
-                    if part.get('type')=='output_text': texts.append(part.get('text',''))
+        text,thoughts=split_output(result)
         usage=result.get('usage',{}) or {}
-        if not ''.join(texts).strip():
+        if not text.strip():
             raise EmptyResponse(f'No output_text in response (status={result.get("status")})',usage)
-        return '\n'.join(texts),usage
+        return text,usage,thoughts
+
+
+THINK=re.compile(r'<think(?:ing)?>(.*?)</think(?:ing)?>',re.S|re.I)
+
+
+def split_output(result):
+    """Separate the visible answer from any chain of thought in a response.
+
+    Handles Responses-API `reasoning` items (summary_text and reasoning_text
+    parts), message parts typed as reasoning/thinking, a `reasoning_content`
+    field, and <think>...</think> blocks inlined in the answer text. Encrypted
+    reasoning cannot be read and is ignored.
+    """
+    texts,thoughts=[],[]
+    for item in result.get('output',[]) or []:
+        kind=item.get('type')
+        if kind=='reasoning':
+            for part in (item.get('summary') or [])+(item.get('content') or []):
+                if isinstance(part,dict) and part.get('text'): thoughts.append(part['text'])
+            if isinstance(item.get('text'),str): thoughts.append(item['text'])
+        elif kind=='message':
+            if isinstance(item.get('reasoning_content'),str): thoughts.append(item['reasoning_content'])
+            for part in item.get('content',[]) or []:
+                ptype=part.get('type')
+                if ptype=='output_text': texts.append(part.get('text',''))
+                elif ptype in ('reasoning','reasoning_text','thinking') and part.get('text'):
+                    thoughts.append(part['text'])
+    if isinstance(result.get('reasoning_content'),str): thoughts.append(result['reasoning_content'])
+    text='\n'.join(texts)
+    inline=THINK.findall(text)
+    if inline:
+        thoughts.extend(t.strip() for t in inline)
+        text=THINK.sub('',text)
+    return text,'\n\n'.join(t for t in thoughts if t and t.strip())
+
+
+def probe(client,model,max_output=2000):
+    """Try reasoning settings on a tiny prompt; report what comes back."""
+    variants=[('default',None),('summary_detailed',{'summary':'detailed'}),
+              ('effort_high_summary_detailed',{'effort':'high','summary':'detailed'})]
+    prompt='Is 391 prime? Think it through, then answer with one JSON object: {"prime": true|false}.'
+    out=[]
+    for name,reasoning in variants:
+        payload={'model':model,'instructions':'Answer briefly.','input':[{'role':'user','content':prompt}],
+                 'max_output_tokens':max_output,'store':False,'agentic_memory':False}
+        if reasoning: payload['reasoning']=reasoning
+        try:
+            raw=client._request('POST','/responses',payload)
+        except Exception as exc:
+            out.append({'variant':name,'accepted':False,'error':str(exc)[:300]});continue
+        text,thoughts=split_output(raw)
+        usage=raw.get('usage') or {}
+        out.append({'variant':name,'accepted':True,'status':raw.get('status'),
+                    'output_item_types':[i.get('type') for i in raw.get('output',[]) or []],
+                    'reasoning_tokens':(usage.get('output_tokens_details') or {}).get('reasoning_tokens'),
+                    'reasoning_chars_captured':len(thoughts),
+                    'reasoning_preview':thoughts[:300],'answer':text[:200],'cost':usage.get('cost'),
+                    'raw':raw})
+    return out

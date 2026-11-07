@@ -48,8 +48,11 @@ class TestFixes(unittest.TestCase):
                              output_price_ceiling=1.2,input_price=0.3,cached_input_price=0.03)
         self.assertEqual(result['halt_reason'],'all_finished')
         self.assertAlmostEqual(result['reported_cost_usd'],round(4*cost,6))
-        with self.assertRaises(ValueError):
-            run_swarm(self.run,model='fake',unsafe_local=True,max_cost_usd=1.0,output_price_ceiling=1.2)
+        # no provider cost and no input price: stop safely instead of guessing
+        fresh=create(Path(self.tmp.name)/'fresh',seed=2)
+        with patch('bench.runner.Adaption',return_value=Fake()):
+            result=run_swarm(fresh,model='fake',unsafe_local=True,max_cost_usd=1.0,output_price_ceiling=1.2)
+        self.assertEqual(result['halt_reason'],'cost_unknown')
 
     # 2. JSON without a tool key is an invalid response, not a crash
     def test_reply_without_tool_key_does_not_crash(self):
@@ -124,7 +127,7 @@ class TestFixes(unittest.TestCase):
             if len(attempts)<3:raise TimeoutError('timed out')
             return Resp(body)
         with patch.dict(os.environ,{'ADAPTION_API_KEY':'x'}),patch('bench.api.urllib.request.urlopen',urlopen),patch('bench.api.time.sleep'):
-            text,_=Adaption().answer('m','s','p')
+            text,_,_=Adaption().answer('m','s','p')
         self.assertEqual(text,FINISH)
         self.assertEqual(len(attempts),3)
         self.assertGreaterEqual(attempts[0],300)

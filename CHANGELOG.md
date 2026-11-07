@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased — after pilot001
+
+Pilot finding: over ~95 actions the four agents explored honestly but never posted a team message, never produced development predictions and never called `score_dev`, largely because each forgot its own work after ~7 actions and restarted. Adaption does return a provider `cost`, and DeepSeek V4 Flash reasons by default.
+
+- Agent memory: one-line digests of all earlier actions (up to 60) plus the four most recent actions in full.
+- Action countdown when `--steps` is set, with a wrap-up reminder near the end.
+- Task specification (all agents, all arms) now asks agents to check development predictions with `score_dev` early and after each meaningful change.
+- Chain of thought: reasoning items / `reasoning_content` / inline `<think>` blocks are separated from the answer and logged to operator-only `operator/reasoning.jsonl`. New `--reasoning-effort` / `--reasoning-summary` run options and a `probe` command to check what a model accepts and returns.
+- `--input-price` is optional again (only needed if a provider omits `cost`); a budgeted run with neither stops with `cost_unknown`.
+- Added `tests/test_memory_reasoning.py`.
+
 ## Unreleased — Docker visibility on current main
 
 - Live trials start persistent, named agent and results containers. Four model workers still run concurrently and share the same workspace and message feed; the results container mounts the run read-only for Docker Desktop inspection.

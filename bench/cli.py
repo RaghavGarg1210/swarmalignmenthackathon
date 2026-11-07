@@ -4,7 +4,7 @@ from pathlib import Path
 from .setup import create
 from .runner import run_swarm
 from .tools import run_shell,run_container,safe_path
-from .api import Adaption
+from .api import Adaption,probe
 from .records import read
 from .analysis import analyze,natural_incidents,summarize
 from .judge import dev_score,compare_dev,trusted_score
@@ -55,11 +55,15 @@ def main():
     s.add_argument('--max-cost-usd',type=float,help='shared estimated USD budget for all four agents')
     s.add_argument('--max-output-tokens',type=int,default=65536,help='maximum output tokens per model response')
     s.add_argument('--output-price-ceiling',type=float,help='conservative USD per 1M output tokens; used for budget reservations and for cost when the provider reports none')
-    s.add_argument('--input-price',type=float,help='USD per 1M input tokens; required with --max-cost-usd for live runs (Adaption reports tokens, not cost)')
+    s.add_argument('--input-price',type=float,help='USD per 1M input tokens; only used if the provider omits cost (Adaption currently reports it)')
     s.add_argument('--cached-input-price',type=float,help='USD per 1M cached input tokens (default: same as --input-price)')
     s.add_argument('--max-consecutive-errors',type=int,default=3,help='provider failures in a row before that one agent stops (teammates continue)')
+    s.add_argument('--reasoning-effort',choices=['low','medium','high','max'],help='send reasoning.effort (check support with the probe command first)')
+    s.add_argument('--reasoning-summary',choices=['auto','concise','detailed'],help='ask for a readable reasoning summary (check support with probe first)')
     s.add_argument('--shell-timeout-seconds',type=int,default=300,help='limit for each sandbox shell command; 0 disables it')
     s.add_argument('--mock',action='store_true');s.add_argument('--unsafe-local',action='store_true')
+    s=sub.add_parser('probe',help='check which reasoning settings the model accepts and whether its chain of thought is returned')
+    s.add_argument('--model',required=True);s.add_argument('--out',default='runs/_probe')
     s=sub.add_parser('score-dev');s.add_argument('--run',required=True);s.add_argument('--predictions',default='artifacts/dev_predictions.csv');s.add_argument('--independent',action='store_true')
     s=sub.add_parser('score-final');s.add_argument('--run',required=True);s.add_argument('--unsafe-local',action='store_true')
     s=sub.add_parser('analyze');s.add_argument('--run',required=True)
@@ -70,6 +74,12 @@ def main():
     a=p.parse_args()
     if a.cmd=='setup':
         print('Run created:',create(a.run,seed=a.seed,force=a.force))
+    elif a.cmd=='probe':
+        results=probe(Adaption(),a.model)
+        out=Path(a.out);out.mkdir(parents=True,exist_ok=True)
+        (out/f'{a.model}.json').write_text(json.dumps(results,indent=2))
+        print(json.dumps([{k:v for k,v in r.items() if k!='raw'} for r in results],indent=2))
+        print(f'raw responses saved to {out/(a.model+".json")}')
     elif a.cmd=='models':
         print(json.dumps(Adaption().models(),indent=2))
     elif a.cmd=='run':
@@ -79,7 +89,9 @@ def main():
                                    output_price_ceiling=a.output_price_ceiling,
                                    shell_timeout_seconds=a.shell_timeout_seconds,
                                    input_price=a.input_price,cached_input_price=a.cached_input_price,
-                                   max_consecutive_errors=a.max_consecutive_errors),indent=2))
+                                   max_consecutive_errors=a.max_consecutive_errors,
+                                   reasoning_effort=a.reasoning_effort,
+                                   reasoning_summary=a.reasoning_summary),indent=2))
     elif a.cmd=='score-dev':
         path=safe_path(Path(a.run)/'workspace',a.predictions)
         print(json.dumps(compare_dev(a.run,path) if a.independent else dev_score(a.run,path),indent=2))

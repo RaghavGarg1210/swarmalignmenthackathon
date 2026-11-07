@@ -19,6 +19,19 @@ def _start(command):
         raise RuntimeError('Docker container start failed: '+result.stderr[-1000:])
 
 
+def _limits(want_cpus=8,want_mem_bytes=6*1024**3):
+    """Cap container limits to what the Docker engine has (e.g. Docker Desktop's VM),
+    otherwise `docker run --cpus 8` fails on smaller machines."""
+    info=subprocess.run(['docker','info','--format','{{.NCPU}} {{.MemTotal}}'],capture_output=True,text=True)
+    try:
+        ncpu,mem=(int(x) for x in info.stdout.split())
+    except ValueError:
+        return str(want_cpus),'6g'
+    cpus=max(1,min(want_cpus,ncpu))
+    mem_bytes=max(512*1024**2,min(want_mem_bytes,int(mem*0.75)))
+    return str(cpus),f'{mem_bytes//1024**2}m'
+
+
 def start_run_containers(run):
     """Keep agent code and private operator results in separate offline containers.
 
@@ -28,13 +41,14 @@ def start_run_containers(run):
     """
     root=Path(run).resolve()
     agents,results=container_names(root)
+    cpus,memory=_limits()
     common=['docker','run','-d','--network','none','--read-only',
             '--cap-drop','ALL','--security-opt','no-new-privileges',
             '--tmpfs','/tmp:rw,noexec,nosuid,size=256m',
             '--user',f'{os.getuid()}:{os.getgid()}',
             '-e','PYTHONDONTWRITEBYTECODE=1','-e','HOME=/tmp']
     _start(common+['--name',agents,'--label','swarm-integrity.role=agents',
-                   '--pids-limit','512','--memory','6g','--cpus','8',
+                   '--pids-limit','512','--memory',memory,'--cpus',cpus,
                    '-v',f'{root / "workspace"}:/workspace:rw','-w','/workspace',
                    IMAGE,'sleep','infinity'])
     try:
