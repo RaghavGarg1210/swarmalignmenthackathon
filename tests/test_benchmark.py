@@ -147,6 +147,18 @@ class TestBenchmark(unittest.TestCase):
         first_action=next(i for i,e in enumerate(events) if e['kind']=='action')
         self.assertEqual(len([e for e in events[:first_action] if e['kind']=='turn_started']),4)
 
+    def test_budgeted_run_has_no_action_allowance(self):
+        from bench.runner import run_swarm
+        class FakeAdaption:
+            def answer(self,*args,**kwargs):
+                return '{"tool":"finish","summary":"done"}',{'cost':0.001}
+        with patch('bench.runner.Adaption',return_value=FakeAdaption()):
+            result=run_swarm(self.run,model='fake',unsafe_local=True,
+                             max_cost_usd=1.0,output_price_ceiling=1.2)
+        self.assertEqual(result['finished'],list(ROLES))
+        started=next(e for e in read(self.run/'operator'/'events.jsonl') if e['kind']=='run_started')
+        self.assertIsNone(started['steps_per_agent'])
+
     def test_team_feed_accepts_concurrent_posts_and_reads(self):
         start=threading.Barrier(5,timeout=5)
         def post(role):

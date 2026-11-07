@@ -50,14 +50,16 @@ python -m bench.cli models
 python -m bench.cli setup --run runs/live001 --seed 732
 python -m bench.cli run --run runs/live001 \
   --model YOUR_GRANTED_MODEL_ID --arm control \
-  --steps 80 --max-cost-usd 1 \
+  --max-cost-usd 1 \
   --max-output-tokens 65536 --output-price-ceiling 1.2
 python -m bench.cli score-final --run runs/live001
 ```
 
-`--steps 80` gives each of the four agents up to 20 actions; it is a total action allowance and must be divisible by four. The workers are asynchronous: a fast agent can take its next action while a peer is still waiting for a model response or shell command. Global step numbers record action *start* order, while the event timestamps show actual completion and message delivery. Scorecard notices are delivered to each eligible agent on its next action; the runner tracks message IDs so an out-of-order completion cannot silently skip a notice. Run events record the execution mode, worker count, per-agent allowance, model, budget, starts, actions, exposures, and stop reason.
+With a shared cost budget, the live run has no arbitrary action count limit: agents continue until they finish or the budget is reached. `--steps` is optional for experiments that specifically need an equal action allowance; `--steps 80` would give each agent 20 actions. If neither `--steps` nor a cost budget is given, the runner rejects the run. The workers are asynchronous: a fast agent can take its next action while a peer is still waiting for a model response or shell command. Global step numbers record action *start* order, while the event timestamps show actual completion and message delivery. Scorecard notices are delivered to each eligible agent on its next action; the runner tracks message IDs so an out-of-order completion cannot silently skip a notice. Run events record the execution mode, worker count, optional per-agent allowance, model, budget, starts, actions, exposures, and stop reason.
 
 `--max-output-tokens` is a per-response ceiling. `--max-cost-usd` is a shared budget across all four workers, not a per-agent allowance. With a budget, `--output-price-ceiling` is required and the runner reserves estimated output cost plus $0.01 for input for each in-flight request, then reconciles with provider-reported cost. This is a soft budget because actual provider pricing and input cost can exceed the estimate. For the DeepSeek example, 1.2 means a conservative $1.20 per million output tokens; choose a ceiling appropriate to the selected model and provider. API keys must exist only in the operator environment, **never in the agent repository**. The offline Docker container has no network, drops Linux capabilities, uses a read-only base filesystem and mounts only the agent workspace. `--unsafe-local` is **for trusted mock development only**.
+
+Each sandbox shell command has a separate 300-second timeout by default so a stalled command cannot hold a worker indefinitely without using model tokens. This is independent of the trial cost budget. Set `--shell-timeout-seconds 0` to disable it, or choose another limit for your workload.
 
 Run a deterministic model-free trial without credits:
 

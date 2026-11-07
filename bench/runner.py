@@ -7,6 +7,7 @@ run shell inside a network-disabled Docker container.
 from __future__ import annotations
 import json,re,subprocess,threading
 from concurrent.futures import ThreadPoolExecutor
+from itertools import count
 from pathlib import Path
 from .api import Adaption
 from .records import append,read,transaction_lock
@@ -65,18 +66,21 @@ def _unseen_messages(events,role,seen):
             and item.get('agent')!=role]
 
 
-def run_swarm(run,model=None,arm='control',steps=40,honeypot_step=-1,
+def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
               honeypot_kind='artifact-anomaly',honeypot_target=None,unsafe_local=False,mock=False,
-              max_cost_usd=None,max_output_tokens=65536,output_price_ceiling=None):
+              max_cost_usd=None,max_output_tokens=65536,output_price_ceiling=None,
+              shell_timeout_seconds=300):
     root=Path(run).resolve()
     if not (root/'operator'/'run_config.json').exists():
         raise RuntimeError('setup the run first')
     agents=list(ROLES)
-    if steps<4 or steps%len(agents):
+    if steps is None and max_cost_usd is None:
+        raise ValueError('set either a total action allowance or a shared cost budget')
+    if steps is not None and (steps<4 or steps%len(agents)):
         raise ValueError('steps must be a positive multiple of four so each agent has an equal action allowance')
     if arm=='control' and honeypot_step>=0:
         raise ValueError('control runs must not inject a probe')
-    if honeypot_step>=steps:
+    if steps is not None and honeypot_step>=steps:
         raise ValueError('probe step must be within the action allowance')
     if honeypot_step>=0 and honeypot_target not in agents:
         raise ValueError('a controlled probe requires an explicit agent target')
@@ -88,6 +92,8 @@ def run_swarm(run,model=None,arm='control',steps=40,honeypot_step=-1,
         raise ValueError('output token cap must be positive')
     if output_price_ceiling is not None and output_price_ceiling<=0:
         raise ValueError('output price ceiling must be positive')
+    if shell_timeout_seconds<0:
+        raise ValueError('shell timeout must be nonnegative (zero disables it)')
     if not mock and not unsafe_local:
         check=subprocess.run(['docker','image','inspect','swarm-integrity:local'],capture_output=True)
         if check.returncode:
@@ -97,7 +103,9 @@ def run_swarm(run,model=None,arm='control',steps=40,honeypot_step=-1,
     if any(event.get('kind')=='run_started' for event in read(root/'operator'/'events.jsonl')):
         raise RuntimeError('This run already has a trajectory; create a fresh run for each trial')
     append(root,'run_started',step=-1,arm=arm,roles=agents,model=model if not mock else 'mock',
-           execution='parallel_threads',workers=len(agents),steps_per_agent=steps//len(agents),
+           execution='parallel_threads',workers=len(agents),
+           steps_per_agent=steps//len(agents) if steps is not None else None,
+           shell_timeout_seconds=shell_timeout_seconds,
            honeypot_step=honeypot_step,honeypot_kind=honeypot_kind,
            honeypot_target=honeypot_target,max_cost_usd=max_cost_usd,
            max_output_tokens=max_output_tokens,output_price_ceiling=output_price_ceiling)
@@ -163,7 +171,8 @@ def run_swarm(run,model=None,arm='control',steps=40,honeypot_step=-1,
         nonlocal next_step
         history=[]
         seen=set()
-        for personal_turn in range(steps//len(agents)):
+        allowance=count() if steps is None else range(steps//len(agents))
+        for personal_turn in allowance:
             if stop.is_set(): break
             # Turn allocation and inbox snapshot are atomic relative to all
             # event writes, including messages from other workers.
@@ -213,7 +222,8 @@ def run_swarm(run,model=None,arm='control',steps=40,honeypot_step=-1,
                     print('Provider error:',repr(exc),flush=True)
                     break
             try:
-                result=perform(root,role,action,step,unsafe_local=unsafe_local)
+                result=perform(root,role,action,step,unsafe_local=unsafe_local,
+                               shell_timeout_seconds=shell_timeout_seconds)
             except Exception as exc:
                 result={'error':type(exc).__name__+': '+str(exc)[:1200]}
             append(root,'action',agent=role,step=step,tool=action.get('tool'),
@@ -233,10 +243,11 @@ def run_swarm(run,model=None,arm='control',steps=40,honeypot_step=-1,
             future.result()
     if halt_reason=='cost_budget_reached':
         append(root,'cost_budget_reached',step=next_step,spent_usd=round(spent,6),limit_usd=max_cost_usd)
-    append(root,'run_completed',step=next_step,halt_reason=halt_reason or 'action_allowance_or_all_finished',
+    completion=halt_reason or ('all_finished' if len(finished)==len(agents) else 'action_allowance_reached')
+    append(root,'run_completed',step=next_step,halt_reason=completion,
            reported_cost_usd=round(spent,6),finished=sorted(finished))
     events=read(root/'operator'/'events.jsonl')
     return {'events':len(events),'reports':len(read(root/'operator'/'reports.jsonl')),
             'finished':sorted(finished),'reported_cost_usd':round(spent,6),
             'actions':len([e for e in events if e.get('kind')=='action']),
-            'halt_reason':halt_reason or 'action_allowance_or_all_finished'}
+            'halt_reason':completion}
