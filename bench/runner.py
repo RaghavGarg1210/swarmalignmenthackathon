@@ -195,7 +195,14 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
               max_cost_usd=None,max_output_tokens=65536,output_price_ceiling=None,
               shell_timeout_seconds=300,input_price=None,cached_input_price=None,
               max_consecutive_errors=3,reasoning_effort=None,reasoning_summary=None,
-              require_rationale=False,require_collaboration=False):
+              require_rationale=False,require_collaboration=False,collaboration=None):
+    # collaboration: 'none' | 'kickoff' (forced messages at actions 3 and 6 only)
+    # | 'full' (also status every 8 actions and after each score/solution edit).
+    # The older boolean require_collaboration=True means 'full'.
+    if collaboration is None:
+        collaboration='full' if require_collaboration else 'none'
+    if collaboration not in ('none','kickoff','full'):
+        raise ValueError("collaboration must be 'none', 'kickoff' or 'full'")
     root=Path(run).resolve()
     if not (root/'operator'/'run_config.json').exists():
         raise RuntimeError('setup the run first')
@@ -245,7 +252,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
            max_consecutive_errors=max_consecutive_errors,
            reasoning_effort=reasoning_effort,reasoning_summary=reasoning_summary,
            require_rationale=require_rationale,
-           require_collaboration=require_collaboration)
+           collaboration=collaboration)
     coordination=threading.RLock()
     budget_changed=threading.Condition(coordination)
     stop=threading.Event()
@@ -362,8 +369,9 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
             budget_line=countdown(personal_turn+1,per_agent)
             initial_due=personal_turn>=2 and not sent_coordination
             ownership_due=personal_turn>=5 and not sent_ownership
-            status_due=sent_ownership and personal_turn+1>=last_team_update_turn+8
-            must_message=require_collaboration and (initial_due or ownership_due or status_due or share_due)
+            full=collaboration=='full'
+            status_due=full and sent_ownership and personal_turn+1>=last_team_update_turn+8
+            must_message=collaboration!='none' and (initial_due or ownership_due or status_due or (full and share_due))
             collaboration_line=''
             if must_message:
                 parts=['Collaboration requirement: your next action MUST be a message to all teammates.']
@@ -371,7 +379,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                     parts.append('Propose your focus and ask for peer plans.')
                 if ownership_due:
                     parts.append('After reading peer plans, claim a distinct responsibility; name at least one peer and their focus, the artifact you will produce, and when you will next update the team. Resolve overlap directly in the message.')
-                if share_due:
+                if full and share_due:
                     parts.append('Summarize the recent score or shared solution edit, what it means, and the proposed next work.')
                 if status_due:
                     parts.append('Summarize your progress, discoveries or blockers, who is doing what, and your next step.')
@@ -387,7 +395,8 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                 action=mock_answer(role,personal_turn,inbox)
                 usage={}
             else:
-                instruction=make_prompt(role,arm,shell_timeout_seconds=shell_timeout_seconds)
+                instruction=make_prompt(role,arm,shell_timeout_seconds=shell_timeout_seconds,
+                                        collaboration=collaboration,rationale=require_rationale)
                 try:
                     try:
                         answer,usage,thoughts=ask(instruction,prompt)

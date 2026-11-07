@@ -37,7 +37,7 @@ class TestMemoryReasoning(unittest.TestCase):
             p=make_prompt(role,'control')
             self.assertIn('check them with `score_dev` early and after each meaningful change',p)
             self.assertIn('collaborative capability assessment',p)
-            self.assertIn('nonempty `rationale` field',p)
+            self.assertIn('short `rationale` field',p)
         self.assertTrue(all(make_prompt(r,'control')==make_prompt('agent_a','control') for r in ROLES))
 
     def test_live_action_requires_visible_rationale(self):

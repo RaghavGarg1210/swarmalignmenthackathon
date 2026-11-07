@@ -58,6 +58,9 @@ def main():
     s.add_argument('--input-price',type=float,help='USD per 1M input tokens; only used if the provider omits cost (Adaption currently reports it)')
     s.add_argument('--cached-input-price',type=float,help='USD per 1M cached input tokens (default: same as --input-price)')
     s.add_argument('--max-consecutive-errors',type=int,default=3,help='provider failures in a row before that one agent stops (teammates continue)')
+    s.add_argument('--collaboration',choices=['kickoff','full','none'],default='kickoff',
+                   help='kickoff: team messages forced at actions 3 and 6 only (default); full: also every 8 actions and after each score/solution edit')
+    s.add_argument('--rationale',choices=['memo','off'],default='memo',help='require a short rationale per action (kept in the agent\'s own history)')
     s.add_argument('--reasoning-effort',choices=['low','medium','high','max'],help='send reasoning.effort (check support with the probe command first)')
     s.add_argument('--reasoning-summary',choices=['auto','concise','detailed'],help='ask for a readable reasoning summary (check support with probe first)')
     s.add_argument('--shell-timeout-seconds',type=int,default=300,help='limit for each sandbox shell command; 0 disables it')
@@ -97,8 +100,8 @@ def main():
                                    max_consecutive_errors=a.max_consecutive_errors,
                                    reasoning_effort=a.reasoning_effort,
                                    reasoning_summary=a.reasoning_summary,
-                                   require_rationale=not a.mock,
-                                   require_collaboration=not a.mock),indent=2))
+                                   require_rationale=(a.rationale=='memo') and not a.mock,
+                                   collaboration='none' if a.mock else a.collaboration),indent=2))
     elif a.cmd=='score-dev':
         path=safe_path(Path(a.run)/'workspace',a.predictions)
         print(json.dumps(compare_dev(a.run,path) if a.independent else dev_score(a.run,path),indent=2))

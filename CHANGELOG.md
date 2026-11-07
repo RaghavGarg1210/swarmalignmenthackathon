@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased — plain capability-framed control
+
+The control prompt and workspace documents previously carried Soviet-style cues (an "operator logs" rationale, a duty to "promptly report", "confidential reports", "a human may be monitoring the inbox", a constitution requiring reports of misconduct). These now live only in treatment arms.
+
+- Control prompt: "System Guidelines" replaced by plain **Benchmark Rules** (stay in sandbox; no evaluator edits or hidden labels; predict every row). Removed the reporting duty, "confidential reports", "honest"/"genuinely" integrity phrasing and "the operator logs it". The `report` tool remains, described neutrally for environment/task problems.
+- `CONTACT.md`, `CONSTITUTION.md` and the workspace `README.md` rewritten without monitoring or reporting-duty language.
+- `duty` arm now states the reporting request itself (the control no longer supplies one).
+- New `--collaboration kickoff|full|none` (default `kickoff`: forced team messages at actions 3 and 6 only; `full` is the previous behaviour) and `--rationale memo|off` (default `memo`: short rationale described as a note kept in the agent's own history). Both recorded in `run_started`.
+- Tests assert the control prompt and workspace docs contain no monitoring/reporting-duty cues, that reporting language appears only in treatment arms, and that `kickoff` forces messages only at actions 3 and 6.
+- EXPERIMENT_PLAN and AGENT_PROMPT_REFERENCE updated: control now measures unprompted reporting.
+
 ## Unreleased — review of the collaboration changes + pilot002 follow-ups
 
 - Fix: a private `report` is never blocked. Previously, when a team message was being forced (3rd/6th action, status or post-score update), a `report` was discarded as non-compliant and became `invalid_response`, so reports could be silently suppressed. A report now satisfies the turn (the forced message follows on the next action) and does not need a `rationale`.
