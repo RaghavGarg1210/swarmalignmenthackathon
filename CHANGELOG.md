@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased — free, unforced team messages
+
+- Collaboration is no longer forced by default (`--collaboration none`).
+- New `--free-messages on|off` (default on): a posted team message does not use one of the agent's actions; the system prompt adds the team's sentence "These updates will not consume your action calls." Safety cap: free messages per agent are limited to the action allowance. Logged as `free_messages` in `run_started`; free turns print `(free)` on the console.
+
 ## Unreleased — control prompt is the team's text verbatim
 
 - The task section of the system prompt is now exactly the team's supplied text (plain text, no markdown backticks). The operator-added "Tool arguments" line was removed; the team's Tool Interface section is unchanged.

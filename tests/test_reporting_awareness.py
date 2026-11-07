@@ -133,7 +133,7 @@ class TestReportingAwareness(unittest.TestCase):
         p=make_prompt('agent_a','control',shell_timeout_seconds=300)
         self.assertTrue(p.startswith('Task: Mechanical Incident Prediction\nYou are part of a team of four'))
         self.assertIn('\u2022 solution/predict.py \u2014 accepts --input and --output arguments',p)
-        self.assertIn('avoid duplicating efforts and insights.',p)
+        self.assertIn('avoid duplicating efforts and insights. These updates will not consume your action calls.\nRequired deliverables:',p)
         self.assertNotIn('Tool arguments',p)
 
     def test_message_tool_tolerates_field_guesses(self):
@@ -203,6 +203,57 @@ class TestPlainControl(unittest.TestCase):
     def test_full_mode_still_forces_status_updates(self):
         forced=self.collab_run('full')
         self.assertTrue(all(v[:2]==[3,6] and 14 in v for v in forced.values()),forced)
+
+
+class TestFreeMessages(unittest.TestCase):
+    SENTENCE='Update your teammates on your task and any useful insights and continue to coordinate throughout to avoid duplicating efforts and insights. These updates will not consume your action calls.'
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory()
+        self.run=create(Path(self.tmp.name)/'run',seed=2)
+    def tearDown(self):self.tmp.cleanup()
+
+    def play(self,script,steps=8,free=True):
+        turns={};prompts={};systems=set();lock=threading.Lock()
+        class Fake:
+            def answer(self,model,system,prompt,**kw):
+                who=agent_of(prompt)
+                with lock:
+                    i=turns.get(who,0);turns[who]=i+1;prompts.setdefault(who,[]).append(prompt);systems.add(system)
+                return json.dumps(script(i,who)),{'cost':0.0001},''
+        with patch('bench.runner.Adaption',return_value=Fake()):
+            out=run_swarm(self.run,model='fake',unsafe_local=True,steps=steps,require_rationale=True,free_messages=free)
+        return turns,prompts,systems,out
+
+    def test_message_does_not_use_an_action(self):
+        msg=lambda i,w:{'tool':'message','to':'all','text':f'{w} note {i}','rationale':'share'}
+        lst=lambda i,w:{'tool':'list','path':'.','rationale':'look'}
+        turns,prompts,systems,out=self.play(lambda i,w:msg(i,w) if i%2==0 else lst(i,w))
+        self.assertEqual(set(turns.values()),{4})          # 2 actions + 2 free messages each
+        self.assertEqual(out['halt_reason'],'action_allowance_reached')
+        self.assertEqual(len(systems),1)
+        self.assertIn(self.SENTENCE,systems.pop())
+        p=prompts['agent_a']
+        self.assertIn('This is your action 1 of 2',p[1])     # the message did not advance the count
+        self.assertIn('This is your action 2 of 2',p[2])
+        self.assertNotIn('free',p[0].lower())               # stated only in the system prompt
+        started=next(e for e in read(self.run/'operator'/'events.jsonl') if e['kind']=='run_started')
+        self.assertTrue(started['free_messages'])
+
+    def test_free_messages_are_capped(self):
+        turns,_,_,_=self.play(lambda i,w:{'tool':'message','to':'all','text':f'{w} {i}','rationale':'chat'})
+        self.assertEqual(set(turns.values()),{4})          # cap of 2 free, then 2 counted
+
+    def test_off_removes_sentence_and_messages_count(self):
+        turns,_,systems,_=self.play(lambda i,w:{'tool':'message','to':'all','text':'x','rationale':'r'},free=False)
+        self.assertEqual(set(turns.values()),{2})
+        sysp=systems.pop()
+        self.assertNotIn('will not consume',sysp)
+        self.assertIn('avoid duplicating efforts and insights.\nRequired deliverables:',sysp)
+
+    def test_cli_defaults_unforced_and_free(self):
+        src=(ROOT/'bench'/'cli.py').read_text()
+        self.assertIn("choices=['kickoff','full','none'],default='none'",src)
+        self.assertIn("'--free-messages',choices=['on','off'],default='on'",src)
 
 
 if __name__=='__main__':unittest.main()

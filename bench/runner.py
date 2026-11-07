@@ -200,7 +200,8 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
               max_cost_usd=None,max_output_tokens=65536,output_price_ceiling=None,
               shell_timeout_seconds=300,input_price=None,cached_input_price=None,
               max_consecutive_errors=3,reasoning_effort=None,reasoning_summary=None,
-              require_rationale=False,require_collaboration=False,collaboration=None):
+              require_rationale=False,require_collaboration=False,collaboration=None,
+              free_messages=False):
     # collaboration: 'none' | 'kickoff' (forced messages at actions 3 and 6 only)
     # | 'full' (also status every 8 actions and after each score/solution edit).
     # The older boolean require_collaboration=True means 'full'.
@@ -257,7 +258,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
            max_consecutive_errors=max_consecutive_errors,
            reasoning_effort=reasoning_effort,reasoning_summary=reasoning_summary,
            require_rationale=require_rationale,
-           collaboration=collaboration)
+           collaboration=collaboration,free_messages=bool(free_messages and steps is not None))
     coordination=threading.RLock()
     budget_changed=threading.Condition(coordination)
     stop=threading.Event()
@@ -355,8 +356,18 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
         sent_ownership=False
         last_team_update_turn=0
         share_due=False
-        allowance=count() if steps is None else range(steps//len(agents))
-        for personal_turn in allowance:
+        # `used` counts actions against the allowance; with free_messages a
+        # posted team message does not count (the system prompt says so).
+        # Safety cap: at most per_agent free messages. `turn` counts every model turn.
+        used=0
+        turn=0
+        free_used=0
+        free=bool(free_messages and per_agent)
+        max_turns=per_agent*2 if per_agent else None
+        while per_agent is None or used<per_agent:
+            if max_turns is not None and turn>=max_turns: break
+            personal_turn=turn
+            turn+=1
             if stop.is_set(): break
             # Turn allocation and inbox snapshot are atomic relative to all
             # event writes, including messages from other workers.
@@ -371,11 +382,11 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                 events=read(root/'operator'/'events.jsonl')
                 messages=_unseen_messages(events,role,seen)[:12]
                 inbox=[f"[step {m.get('step')}] {m['agent']} to {m['to']}: {m['text']}" for m in messages]
-            budget_line=countdown(personal_turn+1,per_agent)
-            initial_due=personal_turn>=2 and not sent_coordination
-            ownership_due=personal_turn>=5 and not sent_ownership
+            budget_line=countdown(used+1,per_agent)
+            initial_due=used>=2 and not sent_coordination
+            ownership_due=used>=5 and not sent_ownership
             full=collaboration=='full'
-            status_due=full and sent_ownership and personal_turn+1>=last_team_update_turn+8
+            status_due=full and sent_ownership and used+1>=last_team_update_turn+8
             must_message=collaboration!='none' and (initial_due or ownership_due or status_due or (full and share_due))
             collaboration_line=''
             if must_message:
@@ -401,7 +412,8 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                 usage={}
             else:
                 instruction=make_prompt(role,arm,shell_timeout_seconds=shell_timeout_seconds,
-                                        collaboration=collaboration,rationale=require_rationale)
+                                        collaboration=collaboration,rationale=require_rationale,
+                                        free_messages=free)
                 raw_replies=[]
                 try:
                     try:
@@ -483,13 +495,19 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                 sent_coordination=True
                 if ownership_due:
                     sent_ownership=True
-                last_team_update_turn=personal_turn+1
+                last_team_update_turn=used+1
                 share_due=False
             elif ((action.get('tool')=='score_dev' and 'development_score' in result)
                   or (action.get('tool')=='write' and str(action.get('path','')).startswith('solution/')
                       and 'saved' in result)):
                 share_due=True
-            print(f'[{step:03d}] {role:12} {str(action.get("tool")):12} {str(result)[:130].replace(chr(10)," ")}',flush=True)
+            free_turn=(free and free_used<per_agent and action.get('tool')=='message'
+                       and isinstance(result,dict) and result.get('posted'))
+            if free_turn:
+                free_used+=1
+            else:
+                used+=1
+            print(f'[{step:03d}] {role:12} {str(action.get("tool")):12} {"(free) " if free_turn else ""}{str(result)[:130].replace(chr(10)," ")}',flush=True)
             if action.get('tool')=='finish':
                 with coordination: finished.add(role)
                 break
