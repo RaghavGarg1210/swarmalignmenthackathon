@@ -9,9 +9,10 @@ RETRY_HTTP={408,409,425,429,500,502,503,504}
 class EmptyResponse(RuntimeError):
     """The provider answered but produced no output text (e.g. the output cap was
     reached during reasoning). The call was still billed, so usage is attached."""
-    def __init__(self,message,usage=None):
+    def __init__(self,message,usage=None,reasoning_text=''):
         super().__init__(message)
         self.usage=usage or {}
+        self.reasoning_text=reasoning_text
 
 
 class Adaption:
@@ -61,7 +62,7 @@ class Adaption:
         text,thoughts=split_output(result)
         usage=result.get('usage',{}) or {}
         if not text.strip():
-            raise EmptyResponse(f'No output_text in response (status={result.get("status")})',usage)
+            raise EmptyResponse(f'No output_text in response (status={result.get("status")})',usage,thoughts)
         return text,usage,thoughts
 
 

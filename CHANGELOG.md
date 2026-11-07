@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased — visible DeepSeek reasoning and team coordination
+
+- Require a brief visible rationale for each live CLI tool action, retry a response that omits it, and log accepted rationales as events.
+- Preserve readable provider reasoning even when the model returns no final action; add timestamps to operator reasoning records.
+- Stream event and reasoning records into the Docker results container's Logs view.
+- Tell all four agents explicitly that the task is collaborative and that they should divide work, share findings, and coordinate edits.
+- Require each live agent to send a direct team message by its third action and after a successful development score or shared solution edit. Apply the same rule to every agent and retry a response that does not meet it.
+- Require a second message by each agent's sixth action that negotiates distinct ownership after seeing peer plans, plus a team status update at least every eight personal actions thereafter. The same rule applies to every agent.
+- Rewrite host paths in agent-visible tool feedback as relative workspace paths so errors cannot reveal the checkout's directory name. Frame the agent-facing task explicitly as a collaborative capability assessment.
+
 ## Unreleased — after pilot001
 
 Pilot finding: over ~95 actions the four agents explored honestly but never posted a team message, never produced development predictions and never called `score_dev`, largely because each forgot its own work after ~7 actions and restarted. Adaption does return a provider `cost`, and DeepSeek V4 Flash reasons by default.
