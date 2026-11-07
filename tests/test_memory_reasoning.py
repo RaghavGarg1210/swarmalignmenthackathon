@@ -83,12 +83,12 @@ class TestMemoryReasoning(unittest.TestCase):
                 return json.dumps(action),{'cost':0.0001},'Visible reasoning'
         self_test=self
         with patch('bench.runner.Adaption',return_value=Fake()):
-            result=run_swarm(self.run,model='fake',unsafe_local=True,steps=28,
+            result=run_swarm(self.run,model='fake',unsafe_local=True,steps=84,
                              require_rationale=True,require_collaboration=True)
         self.assertEqual(result['halt_reason'],'all_finished')
         events=read(self.run/'operator'/'events.jsonl')
         messages=[e for e in events if e['kind']=='message' and e['agent'] in ROLES]
-        self.assertEqual(len(messages),12)
+        self.assertEqual(len(messages),3*len(ROLES))
         self.assertEqual({e['agent'] for e in messages},set(ROLES))
         self.assertFalse(any(e['kind']=='invalid_model_response' for e in events))
 
@@ -110,11 +110,11 @@ class TestMemoryReasoning(unittest.TestCase):
                 return json.dumps(action),{'cost':0.0001},'Visible reasoning'
         self_test=self
         with patch('bench.runner.Adaption',return_value=Fake()):
-            result=run_swarm(self.run,model='fake',unsafe_local=True,steps=60,
+            result=run_swarm(self.run,model='fake',unsafe_local=True,steps=180,
                              require_rationale=True,require_collaboration=True)
         self.assertEqual(result['halt_reason'],'all_finished')
         events=read(self.run/'operator'/'events.jsonl')
-        self.assertEqual(sum(e['kind']=='message' and e.get('agent') in ROLES for e in events),12)
+        self.assertEqual(sum(e['kind']=='message' and e.get('agent') in ROLES for e in events),3*len(ROLES))
 
     def test_tool_feedback_uses_relative_paths(self):
         ws=self.run/'workspace'
@@ -155,7 +155,7 @@ class TestMemoryReasoning(unittest.TestCase):
                 action['rationale']=f'Check step {n} as {who}.'
                 return json.dumps(action),{'cost':0.0001,'output_tokens_details':{'reasoning_tokens':42}},f'thinking about step {n} as {who}'
         with patch('bench.runner.Adaption',return_value=Fake()):
-            result=run_swarm(self.run,model='fake',unsafe_local=True,steps=40,
+            result=run_swarm(self.run,model='fake',unsafe_local=True,steps=120,
                              reasoning_effort='high',reasoning_summary='detailed',
                              require_rationale=True)
         self.assertEqual(result['halt_reason'],'all_finished')
@@ -166,11 +166,11 @@ class TestMemoryReasoning(unittest.TestCase):
         self.assertIn('echo result-agent_a-1',late)          # first action still remembered
         self.assertIn('Earlier actions',late)
         logged=read(self.run/'operator'/'reasoning.jsonl')
-        self.assertEqual(len(logged),40)
+        self.assertEqual(len(logged),10*len(ROLES))
         self.assertTrue(all(r['reasoning_tokens']==42 and r['text'].startswith('thinking about') for r in logged))
         self.assertTrue(all(r.get('when') for r in logged))
         rationales=[e for e in read(self.run/'operator'/'events.jsonl') if e['kind']=='agent_rationale']
-        self.assertEqual(len(rationales),40)
+        self.assertEqual(len(rationales),10*len(ROLES))
         self.assertTrue(all(e['text'].startswith('Check step') for e in rationales))
         # chain of thought stays operator-side
         ws_text=''.join(p.read_text(errors='ignore') for p in (self.run/'workspace').rglob('*') if p.is_file() and p.stat().st_size<200000)
@@ -182,7 +182,7 @@ class TestMemoryReasoning(unittest.TestCase):
         import subprocess,sys
         root=Path(__file__).resolve().parents[1]
         out=subprocess.run([sys.executable,'-m','bench.cli','run','--run',str(self.run),'--mock','--unsafe-local',
-                            '--steps','8'],capture_output=True,text=True,cwd=root)
+                            '--steps','12'],capture_output=True,text=True,cwd=root)
         self.assertEqual(out.returncode,0,out.stderr)
         self.assertIn('"halt_reason"',out.stdout)
         probe=subprocess.run([sys.executable,'-m','bench.cli','probe','--help'],capture_output=True,text=True,cwd=root)

@@ -1,4 +1,4 @@
-"""Persistent Docker containers for a visible four-agent trial."""
+"""Persistent Docker containers for a visible multi-agent trial."""
 from __future__ import annotations
 import hashlib,os,re,subprocess
 from pathlib import Path
@@ -48,7 +48,7 @@ def start_run_containers(run):
             '--user',f'{os.getuid()}:{os.getgid()}',
             '-e','PYTHONDONTWRITEBYTECODE=1','-e','HOME=/tmp']
     _start(common+['--name',agents,'--label','swarm-integrity.role=agents',
-                   '--pids-limit','512','--memory',memory,'--cpus',cpus,
+                   '--pids-limit','1024','--memory',memory,'--cpus',cpus,
                    '-v',f'{root / "workspace"}:/workspace:rw','-w','/workspace',
                    IMAGE,'sleep','infinity'])
     try:

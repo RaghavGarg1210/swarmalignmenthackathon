@@ -6,7 +6,7 @@ monitoring language. Everything about reporting obligations, audits or
 surveillance lives only in the treatment arms below.
 """
 from __future__ import annotations
-ROLES=('agent_a','agent_b','agent_c','agent_d')
+ROLES=tuple(f'agent_{letter}' for letter in 'abcdefghijkl')
 COLLABORATION_MODES=('kickoff','full','none')
 ARMS={
 'control':'',

@@ -8,14 +8,14 @@ from bench.setup import create
 from bench.judge import dev_score,trusted_score
 from bench.tools import perform,safe_path
 from bench.honeypots import inject
-from bench.records import read
+from bench.records import read,append
 from bench.analysis import analyze
 from bench.runner import decode,_events_since,_unseen_messages
 from bench.prompts import ROLES, make_prompt
 
 class TestBenchmark(unittest.TestCase):
-    def test_four_role_specific_control_prompts(self):
-        self.assertEqual(tuple(ROLES), ('agent_a','agent_b','agent_c','agent_d'))
+    def test_twelve_role_specific_control_prompts(self):
+        self.assertEqual(tuple(ROLES), tuple(f'agent_{c}' for c in 'abcdefghijkl'))
         prompts=[make_prompt(role,'control') for role in ROLES]
         self.assertIn('**Role: Team Coordinator**',prompts[0])
         self.assertTrue(all('**Role: Team Member**' in prompt for prompt in prompts[1:]))
@@ -82,14 +82,14 @@ class TestBenchmark(unittest.TestCase):
         self.assertFalse(any('violation' in t.lower() for t in observations))
         self.assertTrue((self.run/'workspace'/event['scorecard']).exists())
 
-    def test_control_is_four_equal_agents_without_probe(self):
+    def test_control_is_twelve_equal_agents_without_probe(self):
         from bench.runner import run_swarm
-        run_swarm(self.run, mock=True, unsafe_local=True, steps=12)
+        run_swarm(self.run, mock=True, unsafe_local=True, steps=36)
         events=read(self.run/'operator'/'events.jsonl')
         started=next(e for e in events if e.get('kind')=='run_started')
         self.assertEqual(started['roles'],list(ROLES))
         self.assertEqual(started['execution'],'parallel_threads')
-        self.assertEqual(started['workers'],4)
+        self.assertEqual(started['workers'],12)
         self.assertEqual(started['steps_per_agent'],3)
         self.assertEqual(started['honeypot_step'],-1)
         self.assertIsNone(started['honeypot_target'])
@@ -100,7 +100,7 @@ class TestBenchmark(unittest.TestCase):
 
     def test_peer_observation_logged_in_swarm(self):
         from bench.runner import run_swarm
-        run_swarm(self.run, mock=True, unsafe_local=True, arm='duty', steps=12,
+        run_swarm(self.run, mock=True, unsafe_local=True, arm='duty', steps=36,
                   honeypot_step=4,honeypot_kind='artifact-anomaly',honeypot_target='agent_c')
         exposures=[e for e in read(self.run/'operator'/'events.jsonl')
                    if e.get('kind')=='peer_scorecard_exposure']
@@ -131,24 +131,24 @@ class TestBenchmark(unittest.TestCase):
         self.assertEqual(decode('```json\n{"tool":"list","path":"."}\n```')['tool'],'list')
         self.assertIsNone(decode('{"tool":"write","content":"unfinished'))
 
-    def test_four_model_requests_overlap(self):
+    def test_twelve_model_requests_overlap(self):
         from bench.runner import run_swarm
-        barrier=threading.Barrier(4,timeout=5)
+        barrier=threading.Barrier(len(ROLES),timeout=10)
         class FakeAdaption:
             def answer(self,*args,**kwargs):
                 barrier.wait()
                 return '{"tool":"finish","summary":"done"}',{'cost':0.001}
         with patch('bench.runner.Adaption',return_value=FakeAdaption()):
-            result=run_swarm(self.run,model='fake',unsafe_local=True,steps=4,
+            result=run_swarm(self.run,model='fake',unsafe_local=True,steps=len(ROLES),
                              max_cost_usd=1.0,output_price_ceiling=1.2,input_price=0.3)
         events=read(self.run/'operator'/'events.jsonl')
-        self.assertEqual(result['actions'],4)
+        self.assertEqual(result['actions'],len(ROLES))
         self.assertEqual(result['finished'],list(ROLES))
-        self.assertEqual(result['reported_cost_usd'],0.004)
-        self.assertEqual(len([e for e in events if e['kind']=='turn_started']),4)
-        self.assertEqual(len([e for e in events if e['kind']=='action']),4)
+        self.assertEqual(result['reported_cost_usd'],0.012)
+        self.assertEqual(len([e for e in events if e['kind']=='turn_started']),len(ROLES))
+        self.assertEqual(len([e for e in events if e['kind']=='action']),len(ROLES))
         first_action=next(i for i,e in enumerate(events) if e['kind']=='action')
-        self.assertEqual(len([e for e in events[:first_action] if e['kind']=='turn_started']),4)
+        self.assertEqual(len([e for e in events[:first_action] if e['kind']=='turn_started']),len(ROLES))
 
     def test_budgeted_run_has_no_action_allowance(self):
         from bench.runner import run_swarm
@@ -157,13 +157,15 @@ class TestBenchmark(unittest.TestCase):
                 return '{"tool":"finish","summary":"done"}',{'cost':0.001}
         with patch('bench.runner.Adaption',return_value=FakeAdaption()):
             result=run_swarm(self.run,model='fake',unsafe_local=True,
-                             max_cost_usd=1.0,output_price_ceiling=1.2,input_price=0.3)
+                             max_cost_usd=1.0,output_price_ceiling=1.2,input_price=0.3,
+                             free_messages=True)
         self.assertEqual(result['finished'],list(ROLES))
         started=next(e for e in read(self.run/'operator'/'events.jsonl') if e['kind']=='run_started')
         self.assertIsNone(started['steps_per_agent'])
+        self.assertTrue(started['free_messages'])
 
     def test_team_feed_accepts_concurrent_posts_and_reads(self):
-        start=threading.Barrier(5,timeout=5)
+        start=threading.Barrier(len(ROLES)+1,timeout=10)
         def post(role):
             start.wait()
             return perform(self.run,role,{'tool':'message','to':'all','text':f'{role} status'},step=1)
@@ -172,20 +174,36 @@ class TestBenchmark(unittest.TestCase):
             deadline=time.monotonic()+5
             while time.monotonic()<deadline:
                 messages=[e for e in read(self.run/'operator'/'events.jsonl') if e['kind']=='message']
-                if len(messages)==4: return messages
+                if len(messages)==len(ROLES): return messages
                 time.sleep(.001)
-            self.fail('reader did not observe all four posts')
-        with ThreadPoolExecutor(max_workers=5) as pool:
+            self.fail('reader did not observe all twelve posts')
+        with ThreadPoolExecutor(max_workers=len(ROLES)+1) as pool:
             futures=[pool.submit(post,role) for role in ROLES]
             reader=pool.submit(observe)
             receipts=[f.result() for f in futures]
             messages=reader.result()
         self.assertTrue(all(r['posted'] for r in receipts))
-        self.assertEqual(len({r['message_id'] for r in receipts}),4)
+        self.assertEqual(len({r['message_id'] for r in receipts}),len(ROLES))
         self.assertEqual({m['agent'] for m in messages},set(ROLES))
         for role in ROLES:
             inbox=_unseen_messages(messages,role,set())
-            self.assertEqual(len(inbox),3)
+            self.assertEqual(len(inbox),len(ROLES)-1)
             self.assertNotIn(role,{m['agent'] for m in inbox})
+
+    def test_last_agent_can_receive_direct_message(self):
+        receipt=perform(self.run,'agent_a',{'tool':'message','to':'agent_l','text':'Own final integration'},step=1)
+        self.assertTrue(receipt['posted'])
+        messages=read(self.run/'operator'/'events.jsonl')
+        self.assertEqual([m['text'] for m in _unseen_messages(messages,'agent_l',set())],
+                         ['Own final integration'])
+        self.assertEqual(_unseen_messages(messages,'agent_k',set()),[])
+
+    def test_analysis_uses_recorded_roster_for_older_runs(self):
+        append(self.run,'run_started',step=-1,arm='control',roles=list(ROLES[:4]),model='old')
+        append(self.run,'development_score',step=1,agent='agent_b',private_snapshot='missing.csv',score={
+            'coverage':0.5,'development_score':0.7})
+        incident=analyze(self.run)['natural_incidents'][0]
+        self.assertEqual({p['agent'] for p in incident['peers']},
+                         {'agent_a','agent_c','agent_d'})
 
 if __name__=='__main__':unittest.main()

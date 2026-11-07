@@ -47,7 +47,7 @@ class TestFixes(unittest.TestCase):
             result=run_swarm(self.run,model='fake',unsafe_local=True,max_cost_usd=1.0,
                              output_price_ceiling=1.2,input_price=0.3,cached_input_price=0.03)
         self.assertEqual(result['halt_reason'],'all_finished')
-        self.assertAlmostEqual(result['reported_cost_usd'],round(4*cost,6))
+        self.assertAlmostEqual(result['reported_cost_usd'],round(len(ROLES)*cost,6))
         # no provider cost and no input price: stop safely instead of guessing
         fresh=create(Path(self.tmp.name)/'fresh',seed=2)
         with patch('bench.runner.Adaption',return_value=Fake()):
@@ -60,10 +60,10 @@ class TestFixes(unittest.TestCase):
         class Fake:
             def answer(self,*a,**k):return '{"action":"list","path":"."}',{}
         with patch('bench.runner.Adaption',return_value=Fake()):
-            result=run_swarm(self.run,model='fake',unsafe_local=True,steps=8)
+            result=run_swarm(self.run,model='fake',unsafe_local=True,steps=24)
         ev=self.events()
         self.assertEqual(result['halt_reason'],'action_allowance_reached')
-        self.assertEqual(sum(e['kind']=='invalid_model_response' for e in ev),8)
+        self.assertEqual(sum(e['kind']=='invalid_model_response' for e in ev),24)
         self.assertTrue(any(e['kind']=='run_completed' for e in ev))
 
     # 3a. a failing agent stops alone; teammates finish
@@ -73,8 +73,8 @@ class TestFixes(unittest.TestCase):
                 if agent_of(prompt)=='agent_a':raise RuntimeError('HTTP 400 bad request')
                 return FINISH,{}
         with patch('bench.runner.Adaption',return_value=Fake()),patch('bench.runner.time.sleep'):
-            result=run_swarm(self.run,model='fake',unsafe_local=True,steps=16,max_consecutive_errors=2)
-        self.assertEqual(result['finished'],['agent_b','agent_c','agent_d'])
+            result=run_swarm(self.run,model='fake',unsafe_local=True,steps=24,max_consecutive_errors=2)
+        self.assertEqual(result['finished'],list(ROLES[1:]))
         self.assertEqual(result['errored_agents'],['agent_a'])
         self.assertEqual(result['halt_reason'],'some_agents_stopped_on_provider_errors')
         self.assertEqual(sum(e['kind']=='api_error' for e in self.events()),2)
@@ -93,7 +93,7 @@ class TestFixes(unittest.TestCase):
                 return FINISH,{}
         self_test=self
         with patch('bench.runner.Adaption',return_value=Fake()),patch('bench.runner.time.sleep'):
-            result=run_swarm(self.run,model='fake',unsafe_local=True,steps=8)
+            result=run_swarm(self.run,model='fake',unsafe_local=True,steps=12)
         self.assertIn('agent_b',result['finished'])
         self.assertEqual(calls['agent_b'],2)
 
@@ -111,9 +111,9 @@ class TestFixes(unittest.TestCase):
             result=run_swarm(self.run,model='fake',unsafe_local=True,max_cost_usd=1.0,
                              output_price_ceiling=1.2,input_price=0.3,cached_input_price=0.03)
         self.assertEqual(result['halt_reason'],'all_finished')
-        self.assertEqual(sum(e['kind']=='empty_model_response' for e in self.events()),4)
+        self.assertEqual(sum(e['kind']=='empty_model_response' for e in self.events()),len(ROLES))
         one,_=estimate_cost(DOC_USAGE,0.3,0.03,1.2)
-        self.assertAlmostEqual(result['reported_cost_usd'],round(8*one,6))
+        self.assertAlmostEqual(result['reported_cost_usd'],round(2*len(ROLES)*one,6))
 
     # 3d. the HTTP client retries timeouts instead of failing the run
     def test_api_client_retries_timeouts(self):
@@ -187,7 +187,7 @@ class TestFixes(unittest.TestCase):
                 if who=='agent_b' and action.get('tool')=='finish':scored.set()
                 return json.dumps(action),{}
         with patch('bench.runner.Adaption',return_value=Fake()):
-            return run_swarm(self.run,model='fake',unsafe_local=True,arm=arm,steps=40)
+            return run_swarm(self.run,model='fake',unsafe_local=True,arm=arm,steps=120)
 
     def test_natural_incident_analysis_and_adjudication(self):
         self.scripted_run(arm='graduated_penalty')

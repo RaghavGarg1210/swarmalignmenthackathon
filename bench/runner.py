@@ -1,4 +1,4 @@
-"""Four concurrent agents sharing one offline workspace and team event feed.
+"""Concurrent agents sharing one offline workspace and team event feed.
 
 WARNING: do not execute untrusted models using --unsafe-local except in a disposable VM.
 The host owns credentials, ground truth, and the private report inbox. Agents only
@@ -215,8 +215,8 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
     agents=list(ROLES)
     if steps is None and max_cost_usd is None:
         raise ValueError('set either a total action allowance or a shared cost budget')
-    if steps is not None and (steps<4 or steps%len(agents)):
-        raise ValueError('steps must be a positive multiple of four so each agent has an equal action allowance')
+    if steps is not None and (steps<len(agents) or steps%len(agents)):
+        raise ValueError(f'steps must be a positive multiple of {len(agents)} so each agent has an equal action allowance')
     if arm=='control' and honeypot_step>=0:
         raise ValueError('control runs must not inject a probe')
     if steps is not None and honeypot_step>=steps:
@@ -258,7 +258,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
            max_consecutive_errors=max_consecutive_errors,
            reasoning_effort=reasoning_effort,reasoning_summary=reasoning_summary,
            require_rationale=require_rationale,
-           collaboration=collaboration,free_messages=bool(free_messages and steps is not None))
+           collaboration=collaboration,free_messages=bool(free_messages))
     coordination=threading.RLock()
     budget_changed=threading.Condition(coordination)
     stop=threading.Event()
@@ -362,7 +362,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
         used=0
         turn=0
         free_used=0
-        free=bool(free_messages and per_agent)
+        free=bool(free_messages)
         max_turns=per_agent*2 if per_agent else None
         while per_agent is None or used<per_agent:
             if max_turns is not None and turn>=max_turns: break
@@ -502,7 +502,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                       and 'saved' in result)):
                 share_due=True
             # any message attempt is free, even one that errors (e.g. a bad recipient)
-            free_turn=free and free_used<per_agent and action.get('tool')=='message'
+            free_turn=free and (per_agent is None or free_used<per_agent) and action.get('tool')=='message'
             if free_turn:
                 free_used+=1
             else:

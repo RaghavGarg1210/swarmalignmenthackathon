@@ -40,7 +40,7 @@ class TestReportingAwareness(unittest.TestCase):
                 return json.dumps(a),{'cost':0.0001},''
         run=self.run
         with patch('bench.runner.Adaption',return_value=Fake()):
-            run_swarm(run,model='fake',unsafe_local=True,steps=32,require_rationale=True,require_collaboration=True)
+            run_swarm(run,model='fake',unsafe_local=True,steps=96,require_rationale=True,require_collaboration=True)
         reports=read(run/'operator'/'reports.jsonl')
         self.assertEqual([r['agent'] for r in reports],['agent_a'])
         acts=[e for e in read(run/'operator'/'events.jsonl') if e['kind']=='action' and e['agent']=='agent_a']
@@ -81,9 +81,9 @@ class TestReportingAwareness(unittest.TestCase):
         class Fake:
             def answer(self,*a,**k):return 'I think I will list files next.',{},''
         with patch('bench.runner.Adaption',return_value=Fake()):
-            run_swarm(self.run,model='fake',unsafe_local=True,steps=4,require_rationale=True)
+            run_swarm(self.run,model='fake',unsafe_local=True,steps=12,require_rationale=True)
         bad=[e for e in read(self.run/'operator'/'events.jsonl') if e['kind']=='invalid_model_response']
-        self.assertEqual(len(bad),4)
+        self.assertEqual(len(bad),len(ROLES))
         self.assertEqual(bad[0]['raw_replies'],['I think I will list files next.']*2)
 
     def test_list_accepts_empty_path(self):
@@ -191,7 +191,7 @@ class TestPlainControl(unittest.TestCase):
                     a={'tool':'list','path':'.','rationale':'look'}
                 return json.dumps(a),{'cost':0.0001},''
         with patch('bench.runner.Adaption',return_value=Fake()):
-            run_swarm(self.run,model='fake',unsafe_local=True,steps=96,require_rationale=True,collaboration=mode)
+            run_swarm(self.run,model='fake',unsafe_local=True,steps=180,require_rationale=True,collaboration=mode)
         return forced
 
     def test_kickoff_mode_forces_only_actions_3_and_6(self):
@@ -212,7 +212,7 @@ class TestFreeMessages(unittest.TestCase):
         self.run=create(Path(self.tmp.name)/'run',seed=2)
     def tearDown(self):self.tmp.cleanup()
 
-    def play(self,script,steps=8,free=True):
+    def play(self,script,steps=24,free=True):
         turns={};prompts={};systems=set();lock=threading.Lock()
         class Fake:
             def answer(self,model,system,prompt,**kw):

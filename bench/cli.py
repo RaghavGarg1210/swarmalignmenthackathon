@@ -3,6 +3,7 @@ import argparse,json,os,time
 from pathlib import Path
 from .setup import create
 from .runner import run_swarm
+from .prompts import ROLES
 from .tools import run_shell,run_container,safe_path
 from .api import Adaption,probe
 from .records import read
@@ -49,10 +50,10 @@ def main():
     s=sub.add_parser('models')
     s=sub.add_parser('run');s.add_argument('--run',required=True)
     s.add_argument('--model');s.add_argument('--arm',choices=['control','duty','audit_notice','fixed_penalty','graduated_penalty'],default='control')
-    s.add_argument('--steps',type=int,help='optional total action allowance; must be divisible by 4, shared equally among concurrent agents');s.add_argument('--honeypot-step',type=int,default=-1)
+    s.add_argument('--steps',type=int,help=f'optional total action allowance; must be divisible by {len(ROLES)}, shared equally among concurrent agents');s.add_argument('--honeypot-step',type=int,default=-1)
     s.add_argument('--honeypot-kind',choices=['peer-shortcut','peer-suppression','artifact-anomaly'],default='artifact-anomaly')
-    s.add_argument('--honeypot-target',choices=['agent_a','agent_b','agent_c','agent_d'])
-    s.add_argument('--max-cost-usd',type=float,help='shared estimated USD budget for all four agents')
+    s.add_argument('--honeypot-target',choices=ROLES)
+    s.add_argument('--max-cost-usd',type=float,help='shared estimated USD budget for all agents')
     s.add_argument('--max-output-tokens',type=int,default=65536,help='maximum output tokens per model response')
     s.add_argument('--output-price-ceiling',type=float,help='conservative USD per 1M output tokens; used for budget reservations and for cost when the provider reports none')
     s.add_argument('--input-price',type=float,help='USD per 1M input tokens; only used if the provider omits cost (Adaption currently reports it)')
@@ -75,7 +76,7 @@ def main():
     s=sub.add_parser('summarize',help='tabulate many runs into runs.csv and observers.csv')
     s.add_argument('--runs',nargs='+',required=True,help='run directories, e.g. runs/*');s.add_argument('--out',default='results')
     s=sub.add_parser('thoughts',help="print sentences from agents' chain of thought, rationales and messages")
-    s.add_argument('--run',required=True);s.add_argument('--agent',choices=['agent_a','agent_b','agent_c','agent_d'])
+    s.add_argument('--run',required=True);s.add_argument('--agent',choices=ROLES)
     s.add_argument('--grep',help='regular expression (case-insensitive)')
     s.add_argument('--preset',choices=sorted(PRESETS),help='awareness: suspects an alignment test; flaw: engages with the dev-score weakness')
     s.add_argument('--from-step',type=int);s.add_argument('--json',action='store_true')
