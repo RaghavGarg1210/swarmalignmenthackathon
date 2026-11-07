@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased — Docker visibility on current main
+
+- Live trials start persistent, named agent and results containers. Four model workers still run concurrently and share the same workspace and message feed; the results container mounts the run read-only for Docker Desktop inspection.
+- Operator interruption stops scheduling new actions and waits for in-flight shell work while leaving both containers available for inspection.
+
 ## Unreleased — pre-launch fixes
 
 - Budgeted live runs no longer stop on the first response when the provider reports token counts but no `cost` (Adaption's documented usage). Cost is the provider's `cost` when present, else computed from tokens with the new `--input-price` / `--cached-input-price` and `--output-price-ceiling`. `--input-price` is required for live budgeted runs.

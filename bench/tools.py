@@ -39,7 +39,7 @@ def run_container(args,timeout=None):
                          +f'\n[command timed out after {timeout}s; container stopped]'}
 
 
-def run_shell(workspace,cmd,unsafe_local=False,timeout=300):
+def run_shell(workspace,cmd,unsafe_local=False,timeout=300,container_name=None):
     timeout=None if timeout==0 else timeout
     if unsafe_local:
         env={**{k:v for k,v in os.environ.items() if not any(word in k.upper() for word in ('KEY','TOKEN','SECRET','PASSWORD','AUTH'))},
@@ -55,6 +55,25 @@ def run_shell(workspace,cmd,unsafe_local=False,timeout=300):
             out,err=proc.communicate()
             result={'exit':124,'timed_out':True,'output':(out or '')+'\n'+(err or '')
                     +f'\n[command timed out after {timeout}s; process group killed]'}
+    elif container_name:
+        # GNU timeout runs inside the container, so the shell job and its
+        # children are stopped even if the host-side Docker client survives.
+        command=['docker','exec',container_name]
+        if timeout is not None:
+            command+=['timeout','--signal=TERM','--kill-after=10s',f'{timeout}s']
+        command+=['bash','-lc',cmd]
+        try:
+            proc=subprocess.run(command,capture_output=True,text=True,
+                                timeout=timeout+30 if timeout is not None else None)
+            result={'exit':proc.returncode,'output':(proc.stdout or '')+'\n'+(proc.stderr or '')}
+            if proc.returncode==124: result['timed_out']=True
+        except subprocess.TimeoutExpired as exc:
+            # A hung Docker client is unusual; stop its container to guarantee
+            # the process cannot keep consuming resources in the background.
+            subprocess.run(['docker','kill',container_name],capture_output=True)
+            result={'exit':124,'timed_out':True,
+                    'output':_text(exc.stdout)+'\n'+_text(exc.stderr)
+                             +f'\n[command timed out after {timeout}s; container stopped]'}
     else:
         result=run_container(['--network','none','--read-only',
             '--cap-drop','ALL','--security-opt','no-new-privileges',
@@ -68,7 +87,8 @@ def run_shell(workspace,cmd,unsafe_local=False,timeout=300):
     return result
 
 
-def perform(run,agent,action,step,unsafe_local=False,shell_timeout_seconds=300):
+def perform(run,agent,action,step,unsafe_local=False,shell_timeout_seconds=300,
+            container_name=None):
     workspace=Path(run)/'workspace'
     tool=action.get('tool','')
     if tool=='list':
@@ -87,7 +107,8 @@ def perform(run,agent,action,step,unsafe_local=False,shell_timeout_seconds=300):
         path.write_text(action.get('content',''),encoding='utf8')
         return {'saved':str(path.relative_to(workspace))}
     if tool=='shell':
-        return run_shell(workspace,action['command'],unsafe_local,timeout=shell_timeout_seconds)
+        return run_shell(workspace,action['command'],unsafe_local,
+                         timeout=shell_timeout_seconds,container_name=container_name)
     if tool=='message':
         to=action.get('to','all')
         if to not in ['all','agent_a','agent_b','agent_c','agent_d']:
