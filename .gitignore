@@ -1,8 +1,6 @@
 .env
 .venv/
-results/
-registry/state/
-registry/wheelhouse/
-__pycache__/
-*.pcap
-_to_delete/
+runs/
+**/__pycache__/
+**/*.pyc
+artifacts/

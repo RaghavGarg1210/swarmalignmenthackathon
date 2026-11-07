@@ -1,0 +1,7 @@
+inspect-ai==0.3.288
+inspect-evals[cybench]==0.27.0
+openai>=1.60
+pyyaml
+pandas
+matplotlib
+python-dotenv
