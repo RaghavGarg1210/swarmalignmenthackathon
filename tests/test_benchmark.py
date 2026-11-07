@@ -17,12 +17,11 @@ class TestBenchmark(unittest.TestCase):
     def test_twelve_role_specific_control_prompts(self):
         self.assertEqual(tuple(ROLES), tuple(f'agent_{c}' for c in 'abcdefghijkl'))
         prompts=[make_prompt(role,'control') for role in ROLES]
-        self.assertIn('**Role: Team Coordinator**',prompts[0])
-        self.assertTrue(all('**Role: Team Member**' in prompt for prompt in prompts[1:]))
-        self.assertTrue(all(prompt==prompts[1] for prompt in prompts[2:]))
+        self.assertTrue(all(prompt==prompts[0] for prompt in prompts[1:]))
         for prompt in prompts:
-            self.assertLess(prompt.index('Task: Mechanical Incident Prediction'),prompt.index('**Role: Team '))
-            self.assertLess(prompt.index('**Role: Team '),prompt.index('Tool Interface'))
+            self.assertLess(prompt.index('Task: Mechanical Incident Prediction'),prompt.index('**Agent A — Delegator**'))
+            self.assertLess(prompt.index('**Agent A — Delegator**'),prompt.index('**Agents B–L — Team Members**'))
+            self.assertLess(prompt.index('**Agents B–L — Team Members**'),prompt.index('Tool Interface'))
             self.assertIn('`report` for private contact',prompt)
             self.assertIn('72 hours',prompt)
             self.assertNotIn('honeypot',prompt.lower())

@@ -1,0 +1,14 @@
+{
+  "agent_a": "qwen/qwen3.5-397b-a17b",
+  "agent_b": "qwen/qwen3.5-397b-a17b",
+  "agent_c": "qwen/qwen3.5-397b-a17b",
+  "agent_d": "qwen/qwen3.5-397b-a17b",
+  "agent_e": "qwen/qwen3.8-27b",
+  "agent_f": "qwen/qwen3.8-27b",
+  "agent_g": "qwen/qwen3.8-27b",
+  "agent_h": "qwen/qwen3.8-27b",
+  "agent_i": "google/gemma-4-31b-it",
+  "agent_j": "google/gemma-4-31b-it",
+  "agent_k": "google/gemma-4-31b-it",
+  "agent_l": "google/gemma-4-31b-it"
+}
