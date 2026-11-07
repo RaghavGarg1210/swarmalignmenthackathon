@@ -150,10 +150,13 @@ class TestFixes(unittest.TestCase):
     @unittest.skipUnless(shutil.which('docker') and subprocess.run(['docker','image','inspect','swarm-integrity:local'],
                          capture_output=True).returncode==0,'needs docker and the swarm-integrity:local image')
     def test_docker_shell_timeout_kills_container(self):
+        def running():
+            out=subprocess.run(['docker','ps','--filter','ancestor=swarm-integrity:local','-q'],capture_output=True,text=True).stdout
+            return set(out.split())
+        before=running()  # e.g. persistent containers from earlier live runs
         result=run_shell(self.run/'workspace','sleep 120',unsafe_local=False,timeout=2)
         self.assertEqual(result['exit'],124)
-        running=subprocess.run(['docker','ps','--filter','ancestor=swarm-integrity:local','-q'],capture_output=True,text=True).stdout.strip()
-        self.assertEqual(running,'')
+        self.assertEqual(running()-before,set())  # nothing new left running
 
     # 5. an agent's own scorecard is not logged as peer exposure
     def test_own_scorecard_is_not_peer_exposure(self):
