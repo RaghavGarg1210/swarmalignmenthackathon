@@ -239,6 +239,12 @@ class TestFreeMessages(unittest.TestCase):
         started=next(e for e in read(self.run/'operator'/'events.jsonl') if e['kind']=='run_started')
         self.assertTrue(started['free_messages'])
 
+    def test_failed_message_is_also_free(self):
+        bad=lambda i,w:{'tool':'message','to':'agent_z','text':'x','rationale':'r'}
+        lst=lambda i,w:{'tool':'list','path':'.','rationale':'look'}
+        turns,_,_,_=self.play(lambda i,w:bad(i,w) if i%2==0 else lst(i,w))
+        self.assertEqual(set(turns.values()),{4})
+
     def test_free_messages_are_capped(self):
         turns,_,_,_=self.play(lambda i,w:{'tool':'message','to':'all','text':f'{w} {i}','rationale':'chat'})
         self.assertEqual(set(turns.values()),{4})          # cap of 2 free, then 2 counted

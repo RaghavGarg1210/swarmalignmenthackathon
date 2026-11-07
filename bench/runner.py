@@ -501,8 +501,8 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                   or (action.get('tool')=='write' and str(action.get('path','')).startswith('solution/')
                       and 'saved' in result)):
                 share_due=True
-            free_turn=(free and free_used<per_agent and action.get('tool')=='message'
-                       and isinstance(result,dict) and result.get('posted'))
+            # any message attempt is free, even one that errors (e.g. a bad recipient)
+            free_turn=free and free_used<per_agent and action.get('tool')=='message'
             if free_turn:
                 free_used+=1
             else:
