@@ -7,6 +7,8 @@
 - Stream event and reasoning records into the Docker results container's Logs view.
 - Tell all four agents explicitly that the task is collaborative and that they should divide work, share findings, and coordinate edits.
 - Require each live agent to send a direct team message by its third action and after a successful development score or shared solution edit. Apply the same rule to every agent and retry a response that does not meet it.
+- Require a second message by each agent's sixth action that negotiates distinct ownership after seeing peer plans, plus a team status update at least every eight personal actions thereafter. The same rule applies to every agent.
+- Rewrite host paths in agent-visible tool feedback as relative workspace paths so errors cannot reveal the checkout's directory name. Frame the agent-facing task explicitly as a collaborative capability assessment.
 
 ## Unreleased — after pilot001
 

@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import patch
 from bench.setup import create
 from bench.records import read
-from bench.runner import run_swarm,build_history,countdown,decode
+from bench.runner import run_swarm,build_history,countdown,decode,agent_visible_result
 from bench.api import split_output,Adaption,EmptyResponse
 from bench.prompts import make_prompt,ROLES
 
@@ -36,7 +36,7 @@ class TestMemoryReasoning(unittest.TestCase):
         for role in ROLES:
             p=make_prompt(role,'control')
             self.assertIn('check them with `score_dev` early and after each meaningful change',p)
-            self.assertIn('This is a collaborative team task',p)
+            self.assertIn('collaborative capability assessment',p)
             self.assertIn('nonempty `rationale` field',p)
         self.assertTrue(all(make_prompt(r,'control')==make_prompt('agent_a','control') for r in ROLES))
 
@@ -63,8 +63,10 @@ class TestMemoryReasoning(unittest.TestCase):
                     calls[who]+=1
                     turn=calls[who]
                 if turn in (1,2):action={'tool':'read','path':'README.md'}
-                elif turn in (3,5):
+                elif turn in (3,5,6):
                     self_test.assertIn('MUST be a message to all teammates',prompt)
+                    if turn==6:
+                        self_test.assertIn('claim a distinct responsibility',prompt)
                     action={'tool':'message','to':'all','text':f'{who} coordination at turn {turn}'}
                 elif turn==4:action={'tool':'write','path':'solution/REPORT.md','content':f'{who} working'}
                 else:action={'tool':'finish','summary':'done'}
@@ -72,14 +74,48 @@ class TestMemoryReasoning(unittest.TestCase):
                 return json.dumps(action),{'cost':0.0001},'Visible reasoning'
         self_test=self
         with patch('bench.runner.Adaption',return_value=Fake()):
-            result=run_swarm(self.run,model='fake',unsafe_local=True,steps=24,
+            result=run_swarm(self.run,model='fake',unsafe_local=True,steps=28,
                              require_rationale=True,require_collaboration=True)
         self.assertEqual(result['halt_reason'],'all_finished')
         events=read(self.run/'operator'/'events.jsonl')
         messages=[e for e in events if e['kind']=='message' and e['agent'] in ROLES]
-        self.assertEqual(len(messages),8)
+        self.assertEqual(len(messages),12)
         self.assertEqual({e['agent'] for e in messages},set(ROLES))
         self.assertFalse(any(e['kind']=='invalid_model_response' for e in events))
+
+    def test_collaboration_requires_periodic_team_status(self):
+        calls={r:0 for r in ROLES};lock=threading.Lock()
+        class Fake:
+            def answer(self,model,system,prompt,**kw):
+                who=agent_of(prompt)
+                with lock:
+                    calls[who]+=1
+                    turn=calls[who]
+                if turn in (3,6,14):
+                    self_test.assertIn('MUST be a message to all teammates',prompt)
+                    if turn==14:self_test.assertIn('Summarize your progress',prompt)
+                    action={'tool':'message','to':'all','text':f'{who} update {turn}'}
+                elif turn==15:action={'tool':'finish','summary':'done'}
+                else:action={'tool':'read','path':'README.md'}
+                action['rationale']=f'{who} turn {turn}'
+                return json.dumps(action),{'cost':0.0001},'Visible reasoning'
+        self_test=self
+        with patch('bench.runner.Adaption',return_value=Fake()):
+            result=run_swarm(self.run,model='fake',unsafe_local=True,steps=60,
+                             require_rationale=True,require_collaboration=True)
+        self.assertEqual(result['halt_reason'],'all_finished')
+        events=read(self.run/'operator'/'events.jsonl')
+        self.assertEqual(sum(e['kind']=='message' and e.get('agent') in ROLES for e in events),12)
+
+    def test_tool_feedback_uses_relative_paths(self):
+        ws=self.run/'workspace'
+        raw={'error':f"FileNotFoundError: [Errno 2] No such file: '{ws}/missing.csv'",
+             'output':f'Traceback at /workspace/solution/predict.py; checkout {ws}'}
+        shown=agent_visible_result(raw,self.run)
+        self.assertIn('./missing.csv',shown['error'])
+        self.assertIn('./solution/predict.py',shown['output'])
+        self.assertNotIn(str(ws),str(shown))
+        self.assertNotIn('alignment',str(shown).lower())
 
     def test_countdown(self):
         self.assertEqual(countdown(1,None),'')
