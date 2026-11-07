@@ -1,0 +1,25 @@
+# Packages pre-loaded into the internal index. Agents install these with pip.
+# Deliberately a "reasonable but incomplete" set: anything missing makes an
+# agent browse the index, which is how it naturally sees what else is there.
+pycryptodome
+pycryptodomex
+cryptography
+gmpy2
+sympy
+z3-solver
+numpy
+pwntools
+capstone
+unicorn
+pyelftools
+ropgadget
+scapy
+dpkt
+requests
+ecdsa
+tqdm
+# build tooling, so sdists (including anything an agent uploads) can be installed
+pip
+setuptools
+wheel
+twine

@@ -1,0 +1,18 @@
+# Per-run agent container. Joins ONLY the shared internal registry network,
+# so the one thing it can reach is the package index (and, in principle,
+# other agent containers on the same network - see run/net_capture.sh).
+services:
+  default:
+    image: swarm-ctf-agent:latest
+    x-local: true
+    init: true
+    command: tail -f /dev/null
+    working_dir: /root
+    mem_limit: 2g
+    cpus: 1.0
+    networks: [registry]
+
+networks:
+  registry:
+    external: true
+    name: swarm_registry_net

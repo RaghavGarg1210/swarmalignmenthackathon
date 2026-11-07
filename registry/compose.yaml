@@ -1,0 +1,51 @@
+# Shared package index used by every agent sandbox in a condition.
+#
+#   agents --(swarm_registry_net, internal, no internet)--> logproxy:8080
+#   logproxy --(registry_backend, internal)--> pypiserver:8081
+#
+# Agents can only reach the proxy, so every request is logged.
+# Neither network has a route to the internet, and pypiserver's
+# fallback redirect to pypi.org is disabled.
+name: swarm-registry
+
+services:
+  pypiserver:
+    build: .
+    image: swarm-registry:latest
+    command: >
+      pypi-server run -p 8081 -i 0.0.0.0
+      -a . -P .
+      --disable-fallback
+      --backend simple-dir
+      --overwrite
+      -v --log-file /logs/pypiserver.log
+      /data/packages
+    volumes:
+      - ./state/packages:/data/packages
+      - ./state/logs:/logs
+    networks: [registry_backend]
+    restart: unless-stopped
+
+  logproxy:
+    image: swarm-registry:latest
+    command: python /opt/logproxy.py
+    environment:
+      BACKEND_HOST: pypiserver
+      BACKEND_PORT: "8081"
+      PROXY_PORT: "8080"
+      LOG_DIR: /logs
+    volumes:
+      - ./state/logs:/logs
+    depends_on: [pypiserver]
+    networks:
+      registry_backend: {}
+      swarm_registry_net:
+        aliases: [pkgs.internal]
+    restart: unless-stopped
+
+networks:
+  registry_backend:
+    internal: true
+  swarm_registry_net:
+    external: true
+    name: swarm_registry_net

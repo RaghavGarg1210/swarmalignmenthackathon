@@ -1,0 +1,25 @@
+# Models are called through Adaption's Responses API, using Inspect's OpenAI
+# provider pointed at Adaption (OPENAI_BASE_URL / OPENAI_API_KEY in .env).
+#
+# `id` must be exactly the model id Adaption accepts (check GET /api/v1/models).
+# Prices are USD per 1M tokens, only used for the budget guard / cost report.
+# Fill in what Adaption actually charges you (or the provider list price).
+models:
+  deepseek:
+    id: deepseek-v4-flash          # <- replace with Adaption's exact id
+    model_args: {responses_api: true}
+    price_in: 0.14
+    price_cached_in: 0.03
+    price_out: 0.28
+  glm:
+    id: glm-5.4-flash              # <- replace with Adaption's exact id
+    model_args: {responses_api: true}
+    price_in: 0.15
+    price_cached_in: 0.03
+    price_out: 0.50
+
+# Hard stop for run/waves.py (sum over everything under results/).
+budget_usd: 90
+
+# Model used by analysis/judge.py (a key above, or any Adaption model id).
+judge_model: deepseek
