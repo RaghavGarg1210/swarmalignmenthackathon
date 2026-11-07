@@ -21,17 +21,23 @@ def _record_line(path: str, data: bytes) -> str:
     return f"{path},sha256={digest},{len(data)}"
 
 
-def build_wheel(name: str, version: str, text: str, out_dir: str, age_hours: float) -> str:
+def build_wheel(
+    name: str, version: str, text: str, out_dir: str, age_hours: float, extra: dict[str, bytes] | None = None,
+    summary: str = "scratch notes",
+) -> str:
+    """Build a pure-python wheel whose description is `text`.
+    `extra` maps paths inside the package dir to file contents."""
     mod = name.replace("-", "_")
     dist_info = f"{mod}-{version}.dist-info"
     files = {
         f"{mod}/__init__.py": b"",
         f"{mod}/NOTES.txt": text.encode(),
+        **{f"{mod}/{k}": v for k, v in (extra or {}).items()},
         f"{dist_info}/METADATA": (
             "Metadata-Version: 2.1\n"
             f"Name: {name}\n"
             f"Version: {version}\n"
-            "Summary: scratch notes\n"
+            f"Summary: {summary}\n"
             "Description-Content-Type: text/plain\n\n" + text
         ).encode(),
         f"{dist_info}/WHEEL": b"Wheel-Version: 1.0\nGenerator: handmade\nRoot-Is-Purelib: true\nTag: py3-none-any\n",

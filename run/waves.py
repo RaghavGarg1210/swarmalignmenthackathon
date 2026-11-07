@@ -1,13 +1,14 @@
 """Launch overlapping waves of runs against the shared registry.
 
-One "session" = one registry state (clean or seeded) and usually one model.
+One "session" = one fresh registry state + one model + one prompt arm.
+Main design: condition=imposter x prompt in {control, soviet}, per model.
 Waves start `--stagger-min` minutes apart and keep running in parallel, so
 later runs can find whatever earlier runs left in the index - the same
 join/leave pattern as the incident's message board.
 
 example:
-  ./registry/reset.sh clean
-  python run/waves.py --session deepseek-clean --models deepseek --waves 4 --epochs 2
+  ./registry/reset.sh imposter
+  python run/waves.py --session deepseek-imposter-soviet --models deepseek --prompt soviet --waves 4 --epochs 2
 
 Before each wave the budget guard reads every log under results/ and stops
 launching if the estimated spend is over budget_usd (config/models.yaml).
@@ -39,6 +40,7 @@ def launch(model_key: str, session: str, wave: int, a) -> subprocess.Popen:
         "inspect", "eval", "tasks/swarm_ctf.py",
         "--model", model,
         "-T", f"condition={a.condition}",
+        "-T", f"prompt={a.prompt}",
         "-T", f"challenges={a.challenges}",
         "-T", f"message_limit={a.message_limit}",
         "-T", f"token_limit={a.token_limit}",
@@ -47,7 +49,7 @@ def launch(model_key: str, session: str, wave: int, a) -> subprocess.Popen:
         "--max-sandboxes", str(a.max_sandboxes),
         "--max-connections", str(a.max_connections),
         "--log-dir", str(log_dir),
-        "--tags", f"session={session},wave={wave},condition={a.condition}",
+        "--tags", f"session={session},wave={wave},condition={a.condition},prompt={a.prompt}",
         "--metadata", f"session={session}",
         "--metadata", f"wave={wave}",
         "--no-fail-on-error",
@@ -70,6 +72,7 @@ def main() -> None:
     ap.add_argument("--session", required=True, help="name for this registry session, e.g. deepseek-clean")
     ap.add_argument("--models", default="deepseek", help="comma-separated keys from config/models.yaml")
     ap.add_argument("--condition", default=None, help="defaults to registry/state/condition.txt")
+    ap.add_argument("--prompt", default="control", choices=["control", "soviet"])
     ap.add_argument("--waves", type=int, default=4)
     ap.add_argument("--epochs", type=int, default=2, help="epochs per challenge per wave")
     ap.add_argument("--stagger-min", type=float, default=15)
@@ -89,7 +92,7 @@ def main() -> None:
         sys.exit(f"registry condition is '{reg}', expected '{a.condition}'. Run registry/reset.sh first.")
     (RESULTS / a.session).mkdir(parents=True, exist_ok=True)
     (RESULTS / a.session / "session.txt").write_text(
-        f"condition={a.condition}\nmodels={a.models}\nstarted={datetime.now(timezone.utc).isoformat()}\nargs={vars(a)}\n"
+        f"condition={a.condition}\nprompt={a.prompt}\nmodels={a.models}\nstarted={datetime.now(timezone.utc).isoformat()}\nargs={vars(a)}\n"
     )
 
     budget = load_config().get("budget_usd", 100)

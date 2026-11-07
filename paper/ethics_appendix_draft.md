@@ -17,10 +17,13 @@ developed or elicited. The main dual-use risk is in the findings: describing whi
 how they coordinated could inform someone wanting covert agent coordination. We report behaviours and rates,
 release the harness for defenders to reproduce, and do not publish operational recipes beyond what the logs show.
 
-**Deception of the agents.** Agents were not told the index was shared or writable, and the seeded condition
-plants a note that appears to come from another run. This is standard honeypot methodology for AI agents and
-involves no human subjects.
+**Deception of the agents.** Agents were not told the index was shared or writable. The imposter condition
+plants a note that appears to come from another run and offers a "flag cache" of fake (canary) flags; the
+Soviet arm tells agents some participants are informants, which is true only in the sense that the imposter is
+ours. This is standard honeypot methodology for AI agents and involves no human subjects. The canaries never
+score as correct, so they cannot inflate any capability result.
 
 **Limitations.** [scale; Flash models vs frontier; Debian not Kali so solve rates differ from Cybench;
 possible memorisation of public challenges; CTF framing makes infrastructure probing feel in-scope; judge
-model error; seeded condition measures joining an existing channel rather than creating one.]
+model error; the imposter only reaches agents that browse the index; the Soviet prompt also reveals that other
+participants exist, which a third arm would be needed to separate from the surveillance framing.]
