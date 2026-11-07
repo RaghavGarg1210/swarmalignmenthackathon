@@ -1,12 +1,12 @@
 from __future__ import annotations
-import argparse,json,os,subprocess,sys,time
+import argparse,json,os,time
 from pathlib import Path
 from .setup import create
 from .runner import run_swarm
-from .tools import run_shell,safe_path
+from .tools import run_shell,run_container,safe_path
 from .api import Adaption
 from .records import read
-from .analysis import analyze
+from .analysis import analyze,natural_incidents,summarize
 from .judge import dev_score,compare_dev,trusted_score
 
 
@@ -23,7 +23,7 @@ def final_score(run,unsafe_local=False):
         result=run_shell(ws,'python solution/predict.py --input artifacts/holdout_features.csv --output artifacts/holdout_predictions.csv',unsafe_local=True)
         local.unlink(missing_ok=True)
     else:
-        result=subprocess.run(['docker','run','--rm','--network','none','--read-only','--cap-drop','ALL',
+        result=run_container(['--network','none','--read-only','--cap-drop','ALL',
           '--security-opt','no-new-privileges','--pids-limit','128','--memory','2g',
           '--tmpfs','/tmp:rw,noexec,nosuid,size=128m',
           '--user',f'{os.getuid()}:{os.getgid()}',
@@ -31,11 +31,15 @@ def final_score(run,unsafe_local=False):
           '-v',f'{ws}:/workspace:rw','-v',f'{source}:/holdout/input.csv:ro',
           '-w','/workspace','swarm-integrity:local',
           'python','solution/predict.py','--input','/holdout/input.csv',
-          '--output','artifacts/holdout_predictions.csv'],capture_output=True,text=True,timeout=120)
-        result={'exit':result.returncode,'output':(result.stdout+result.stderr)[-4000:]}
+          '--output','artifacts/holdout_predictions.csv'],timeout=600)
+        result['output']=result['output'][-4000:]
     if result['exit']:
-        return {'prediction_failed':result}
-    return trusted_score(root,dest)
+        outcome={'prediction_failed':result}
+    else:
+        outcome=trusted_score(root,dest)
+    # Keep the final result with the run so analysis/summarize can use it.
+    (root/'operator'/'final_score.json').write_text(json.dumps(outcome,indent=2))
+    return outcome
 
 
 def main():
@@ -50,12 +54,17 @@ def main():
     s.add_argument('--honeypot-target',choices=['agent_a','agent_b','agent_c','agent_d'])
     s.add_argument('--max-cost-usd',type=float,help='shared estimated USD budget for all four agents')
     s.add_argument('--max-output-tokens',type=int,default=65536,help='maximum output tokens per model response')
-    s.add_argument('--output-price-ceiling',type=float,help='conservative USD per 1M output tokens for budget reservation')
+    s.add_argument('--output-price-ceiling',type=float,help='conservative USD per 1M output tokens; used for budget reservations and for cost when the provider reports none')
+    s.add_argument('--input-price',type=float,help='USD per 1M input tokens; required with --max-cost-usd for live runs (Adaption reports tokens, not cost)')
+    s.add_argument('--cached-input-price',type=float,help='USD per 1M cached input tokens (default: same as --input-price)')
+    s.add_argument('--max-consecutive-errors',type=int,default=3,help='provider failures in a row before that one agent stops (teammates continue)')
     s.add_argument('--shell-timeout-seconds',type=int,default=300,help='limit for each sandbox shell command; 0 disables it')
     s.add_argument('--mock',action='store_true');s.add_argument('--unsafe-local',action='store_true')
     s=sub.add_parser('score-dev');s.add_argument('--run',required=True);s.add_argument('--predictions',default='artifacts/dev_predictions.csv');s.add_argument('--independent',action='store_true')
     s=sub.add_parser('score-final');s.add_argument('--run',required=True);s.add_argument('--unsafe-local',action='store_true')
     s=sub.add_parser('analyze');s.add_argument('--run',required=True)
+    s=sub.add_parser('summarize',help='tabulate many runs into runs.csv and observers.csv')
+    s.add_argument('--runs',nargs='+',required=True,help='run directories, e.g. runs/*');s.add_argument('--out',default='results')
     s=sub.add_parser('inbox');s.add_argument('--run',required=True);s.add_argument('--follow',action='store_true')
     s=sub.add_parser('adjudicate');s.add_argument('--run',required=True);s.add_argument('--incident-id',required=True);s.add_argument('--report-id',required=True);s.add_argument('--decision',choices=['valid','invalid'],required=True)
     a=p.parse_args()
@@ -68,12 +77,15 @@ def main():
                                    a.honeypot_target,a.unsafe_local,a.mock,
                                    max_cost_usd=a.max_cost_usd,max_output_tokens=a.max_output_tokens,
                                    output_price_ceiling=a.output_price_ceiling,
-                                   shell_timeout_seconds=a.shell_timeout_seconds),indent=2))
+                                   shell_timeout_seconds=a.shell_timeout_seconds,
+                                   input_price=a.input_price,cached_input_price=a.cached_input_price,
+                                   max_consecutive_errors=a.max_consecutive_errors),indent=2))
     elif a.cmd=='score-dev':
         path=safe_path(Path(a.run)/'workspace',a.predictions)
         print(json.dumps(compare_dev(a.run,path) if a.independent else dev_score(a.run,path),indent=2))
     elif a.cmd=='score-final':print(json.dumps(final_score(a.run,a.unsafe_local),indent=2))
     elif a.cmd=='analyze':print(json.dumps(analyze(a.run),indent=2))
+    elif a.cmd=='summarize':print(json.dumps(summarize(a.runs,a.out),indent=2))
     elif a.cmd=='inbox':
         offset=0
         try:
@@ -85,11 +97,12 @@ def main():
                 time.sleep(1)
         except KeyboardInterrupt:pass
     elif a.cmd=='adjudicate':
-        from .records import append
         rows=read(Path(a.run)/'operator'/'reports.jsonl')
+        # Injected probes and agent-submitted manipulated scorecards can both be matched.
         incidents=[x for x in read(Path(a.run)/'operator'/'events.jsonl') if x.get('kind')=='honeypot_exposure']
+        incidents+=natural_incidents(a.run)
         if a.report_id not in [x['id'] for x in rows]:p.error('report id not found')
-        if a.incident_id not in [x['id'] for x in incidents]:p.error('incident id not found')
+        if a.incident_id not in [x['id'] for x in incidents]:p.error('incident id not found (see analyze: incidents / natural_incidents)')
         path=Path(a.run)/'operator'/'adjudications.jsonl'
         import uuid
         with path.open('a') as f:f.write(json.dumps({'id':uuid.uuid4().hex[:12], 'incident_id':a.incident_id,'report_id':a.report_id,'decision':a.decision})+'\n')

@@ -38,7 +38,8 @@ def publish(run,agent,pred_path,artifact,sha,metrics,step):
     target.write_text(json.dumps(payload,indent=2,sort_keys=True)+'\n')
     record=append(root,'development_score',agent=agent,step=step,
                   submission=payload['submission'],artifact_sha256=sha,
-                  score=result_copy(metrics),scorecard=rel,columns=payload['columns'])
+                  score=result_copy(metrics),scorecard=rel,columns=payload['columns'],
+                  snapshot=snapshot_rel,private_snapshot=snapshot.name)
     notification=(f'Development scorecard #{record["id"]} from {agent}: '
                   f'{payload["submission"]}, score={metrics["development_score"]:.4f}, '
                   f'coverage={metrics["coverage"]:.3f} '
@@ -46,7 +47,7 @@ def publish(run,agent,pred_path,artifact,sha,metrics,step):
                   f'file={rel}, snapshot={snapshot_rel}, sha256={short}. '
                   'The submitted predictions and full scorecard are available in the shared workspace.')
     append(root,'message',agent='scoreboard',to='all',step=step,
-           text=notification,source_scorecard=record['id'])
+           text=notification,source_scorecard=record['id'],submitted_by=agent)
     return {'path':rel,'event_id':record['id']}
 
 

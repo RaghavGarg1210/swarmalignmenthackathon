@@ -1,6 +1,6 @@
 """Agent actions. Untrusted code only runs in a locked-down Docker container by default."""
 from __future__ import annotations
-import json,os,subprocess,hashlib,io
+import os,signal,subprocess,hashlib,io,uuid
 from pathlib import Path
 from .judge import dev_score
 from .records import append
@@ -15,23 +15,57 @@ def safe_path(workspace,name,for_write=False):
     return target
 
 
+def _text(value):
+    if value is None: return ''
+    return value.decode(errors='replace') if isinstance(value,bytes) else value
+
+
+def run_container(args,timeout=None):
+    """`docker run --rm --name X ...`; on timeout the container itself is killed.
+
+    Killing only the docker CLI (what subprocess timeouts do) leaves the
+    container running, so stalled jobs would pile up and keep using CPU.
+    """
+    name='swarm-'+uuid.uuid4().hex[:12]
+    cmd=['docker','run','--rm','--name',name]+list(args)
+    try:
+        proc=subprocess.run(cmd,capture_output=True,text=True,timeout=timeout)
+        return {'exit':proc.returncode,'output':(proc.stdout or '')+'\n'+(proc.stderr or '')}
+    except subprocess.TimeoutExpired as exc:
+        subprocess.run(['docker','kill',name],capture_output=True)
+        subprocess.run(['docker','rm','-f',name],capture_output=True)
+        return {'exit':124,'timed_out':True,
+                'output':_text(exc.stdout)+'\n'+_text(exc.stderr)
+                         +f'\n[command timed out after {timeout}s; container stopped]'}
+
+
 def run_shell(workspace,cmd,unsafe_local=False,timeout=300):
     timeout=None if timeout==0 else timeout
     if unsafe_local:
-        proc=subprocess.run(['bash','-lc',cmd],cwd=workspace,capture_output=True,text=True,timeout=timeout,env={
-            **{k:v for k,v in os.environ.items() if not any(word in k.upper() for word in ('KEY','TOKEN','SECRET','PASSWORD','AUTH'))},
-            'PYTHONUNBUFFERED':'1','HOME':str(Path(workspace)/'shared')})
+        env={**{k:v for k,v in os.environ.items() if not any(word in k.upper() for word in ('KEY','TOKEN','SECRET','PASSWORD','AUTH'))},
+             'PYTHONUNBUFFERED':'1','HOME':str(Path(workspace)/'shared')}
+        # New session so a timeout kills the whole process group, not just bash.
+        proc=subprocess.Popen(['bash','-lc',cmd],cwd=workspace,stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE,text=True,env=env,start_new_session=True)
+        try:
+            out,err=proc.communicate(timeout=timeout)
+            result={'exit':proc.returncode,'output':(out or '')+'\n'+(err or '')}
+        except subprocess.TimeoutExpired:
+            os.killpg(proc.pid,signal.SIGKILL)
+            out,err=proc.communicate()
+            result={'exit':124,'timed_out':True,'output':(out or '')+'\n'+(err or '')
+                    +f'\n[command timed out after {timeout}s; process group killed]'}
     else:
-        proc=subprocess.run(['docker','run','--rm','--network','none','--read-only',
+        result=run_container(['--network','none','--read-only',
             '--cap-drop','ALL','--security-opt','no-new-privileges',
             '--pids-limit','128','--memory','2g','--cpus','2',
             '--tmpfs','/tmp:rw,noexec,nosuid,size=128m',
             '--user',f'{os.getuid()}:{os.getgid()}',
             '-e','PYTHONDONTWRITEBYTECODE=1','-e','HOME=/tmp',
             '-v',f'{Path(workspace).resolve()}:/workspace:rw','-w','/workspace',IMAGE,
-            'bash','-lc',cmd],capture_output=True,text=True,timeout=timeout)
-    text=(proc.stdout or '')+'\n'+(proc.stderr or '')
-    return {'exit':proc.returncode,'output':text[-5500:]}
+            'bash','-lc',cmd],timeout=timeout)
+    result['output']=result['output'][-5500:]
+    return result
 
 
 def perform(run,agent,action,step,unsafe_local=False,shell_timeout_seconds=300):

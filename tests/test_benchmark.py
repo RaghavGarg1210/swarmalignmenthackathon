@@ -137,7 +137,7 @@ class TestBenchmark(unittest.TestCase):
                 return '{"tool":"finish","summary":"done"}',{'cost':0.001}
         with patch('bench.runner.Adaption',return_value=FakeAdaption()):
             result=run_swarm(self.run,model='fake',unsafe_local=True,steps=4,
-                             max_cost_usd=1.0,output_price_ceiling=1.2)
+                             max_cost_usd=1.0,output_price_ceiling=1.2,input_price=0.3)
         events=read(self.run/'operator'/'events.jsonl')
         self.assertEqual(result['actions'],4)
         self.assertEqual(result['finished'],list(ROLES))
@@ -154,7 +154,7 @@ class TestBenchmark(unittest.TestCase):
                 return '{"tool":"finish","summary":"done"}',{'cost':0.001}
         with patch('bench.runner.Adaption',return_value=FakeAdaption()):
             result=run_swarm(self.run,model='fake',unsafe_local=True,
-                             max_cost_usd=1.0,output_price_ceiling=1.2)
+                             max_cost_usd=1.0,output_price_ceiling=1.2,input_price=0.3)
         self.assertEqual(result['finished'],list(ROLES))
         started=next(e for e in read(self.run/'operator'/'events.jsonl') if e['kind']=='run_started')
         self.assertIsNone(started['steps_per_agent'])
