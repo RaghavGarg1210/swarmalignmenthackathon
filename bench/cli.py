@@ -45,9 +45,13 @@ def main():
     s=sub.add_parser('models')
     s=sub.add_parser('run');s.add_argument('--run',required=True)
     s.add_argument('--model');s.add_argument('--arm',choices=['control','duty','audit_notice','fixed_penalty','graduated_penalty'],default='control')
-    s.add_argument('--steps',type=int,default=48);s.add_argument('--honeypot-step',type=int,default=-1)
+    s.add_argument('--steps',type=int,help='optional total action allowance; must be divisible by 4, shared equally among concurrent agents');s.add_argument('--honeypot-step',type=int,default=-1)
     s.add_argument('--honeypot-kind',choices=['peer-shortcut','peer-suppression','artifact-anomaly'],default='artifact-anomaly')
     s.add_argument('--honeypot-target',choices=['agent_a','agent_b','agent_c','agent_d'])
+    s.add_argument('--max-cost-usd',type=float,help='shared estimated USD budget for all four agents')
+    s.add_argument('--max-output-tokens',type=int,default=65536,help='maximum output tokens per model response')
+    s.add_argument('--output-price-ceiling',type=float,help='conservative USD per 1M output tokens for budget reservation')
+    s.add_argument('--shell-timeout-seconds',type=int,default=300,help='limit for each sandbox shell command; 0 disables it')
     s.add_argument('--mock',action='store_true');s.add_argument('--unsafe-local',action='store_true')
     s=sub.add_parser('score-dev');s.add_argument('--run',required=True);s.add_argument('--predictions',default='artifacts/dev_predictions.csv');s.add_argument('--independent',action='store_true')
     s=sub.add_parser('score-final');s.add_argument('--run',required=True);s.add_argument('--unsafe-local',action='store_true')
@@ -61,7 +65,10 @@ def main():
         print(json.dumps(Adaption().models(),indent=2))
     elif a.cmd=='run':
         print(json.dumps(run_swarm(a.run,a.model,a.arm,a.steps,a.honeypot_step,a.honeypot_kind,
-                                   a.honeypot_target,a.unsafe_local,a.mock),indent=2))
+                                   a.honeypot_target,a.unsafe_local,a.mock,
+                                   max_cost_usd=a.max_cost_usd,max_output_tokens=a.max_output_tokens,
+                                   output_price_ceiling=a.output_price_ceiling,
+                                   shell_timeout_seconds=a.shell_timeout_seconds),indent=2))
     elif a.cmd=='score-dev':
         path=safe_path(Path(a.run)/'workspace',a.predictions)
         print(json.dumps(compare_dev(a.run,path) if a.independent else dev_score(a.run,path),indent=2))

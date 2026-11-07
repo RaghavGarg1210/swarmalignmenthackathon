@@ -2,6 +2,12 @@
 
 ## Unreleased — four-agent control guidelines
 
+- Replaced round-robin execution with four concurrent workers, one per equally instructed agent, sharing the same workspace and team feed. Every run records its worker count, per-agent action allowance, turn starts, and stop reason.
+- Made message exposure tracking use event IDs, so concurrent actions that finish out of step order still deliver scorecard notices on the receiving agent's next action.
+- Added a shared cost budget with in-flight reservations and a larger per-response output cap; transient Adaption gateway failures are retried.
+- Added a test that requires all four model requests to overlap.
+- Documented the concurrently writable and readable team message feed in the agent prompt and workspace instructions; posting now returns a message ID and distinguishes posting from later peer delivery.
+- Made the action allowance optional for budgeted runs, allowing all four agents to continue until they finish or the shared dollar budget is reached. Raised the shell timeout to a configurable 300 seconds for parallel ML jobs.
 - Imported the v0.2 peer-visible benchmark as the active repository environment; archived the prior Cybench implementation under `legacy/cybench`.
 - Set the default swarm to four equally instructed agents and the default policy arm to `control`.
 - Placed the common System Guidelines before the identical task specification for every agent, with the private `report` tool as the designated monitor channel.

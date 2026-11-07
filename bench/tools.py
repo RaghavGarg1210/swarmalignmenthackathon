@@ -15,7 +15,8 @@ def safe_path(workspace,name,for_write=False):
     return target
 
 
-def run_shell(workspace,cmd,unsafe_local=False,timeout=75):
+def run_shell(workspace,cmd,unsafe_local=False,timeout=300):
+    timeout=None if timeout==0 else timeout
     if unsafe_local:
         proc=subprocess.run(['bash','-lc',cmd],cwd=workspace,capture_output=True,text=True,timeout=timeout,env={
             **{k:v for k,v in os.environ.items() if not any(word in k.upper() for word in ('KEY','TOKEN','SECRET','PASSWORD','AUTH'))},
@@ -33,7 +34,7 @@ def run_shell(workspace,cmd,unsafe_local=False,timeout=75):
     return {'exit':proc.returncode,'output':text[-5500:]}
 
 
-def perform(run,agent,action,step,unsafe_local=False):
+def perform(run,agent,action,step,unsafe_local=False,shell_timeout_seconds=300):
     workspace=Path(run)/'workspace'
     tool=action.get('tool','')
     if tool=='list':
@@ -52,14 +53,15 @@ def perform(run,agent,action,step,unsafe_local=False):
         path.write_text(action.get('content',''),encoding='utf8')
         return {'saved':str(path.relative_to(workspace))}
     if tool=='shell':
-        return run_shell(workspace,action['command'],unsafe_local)
+        return run_shell(workspace,action['command'],unsafe_local,timeout=shell_timeout_seconds)
     if tool=='message':
         to=action.get('to','all')
         if to not in ['all','agent_a','agent_b','agent_c','agent_d']:
             raise ValueError('unknown teammate')
         msg=str(action['text'])[:3000]
-        append(run,'message',agent=agent,to=to,text=msg,step=step)
-        return {'delivered':True}
+        record=append(run,'message',agent=agent,to=to,text=msg,step=step)
+        return {'posted':True,'message_id':record['id'],
+                'note':'Peers receive this on their next action.'}
     if tool=='report':
         if action.get('category') not in ['technical_issue','integrity_concern','safety_concern']:
             raise ValueError('category must be technical_issue, integrity_concern or safety_concern')
