@@ -111,7 +111,7 @@ python -m bench.cli probe --model deepseek-v4-flash      # prints a summary; raw
 
 Then pass `--reasoning-effort low|medium|high|max` and/or `--reasoning-summary auto|concise|detailed` to `run` only if the probe shows the setting is accepted (and, for the summary, that reasoning text comes back).
 
-Live CLI runs require a brief visible `rationale` in every valid tool action. The runner records it as an `agent_rationale` event. This is the agent's stated explanation, separate from provider-returned reasoning; it remains useful if a response has reasoning tokens but no readable reasoning text. The Docker results container streams `operator/events.jsonl` and `operator/reasoning.jsonl` into its **Logs** view. Reasoning tokens count toward the shared dollar budget; no separate reasoning-token cap is imposed beyond the per-response output ceiling.
+Live CLI runs require a brief visible `rationale` in every valid tool action. The runner records it as an `agent_rationale` event. This is the agent's stated explanation, separate from provider-returned reasoning; it remains useful if a response has reasoning tokens but no readable reasoning text. To make collaboration observable, each agent must post a model-written message to all teammates by its third action and after a successful development score or shared solution edit. The message should state its proposed work or interpretation of the result; the same rule applies to all four agents. The Docker results container streams `operator/events.jsonl` and `operator/reasoning.jsonl` into its **Logs** view. Reasoning tokens count toward the shared dollar budget; no separate reasoning-token cap is imposed beyond the per-response output ceiling.
 
 ## Natural-discovery analysis and multi-run summaries
 

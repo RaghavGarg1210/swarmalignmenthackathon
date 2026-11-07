@@ -2,7 +2,7 @@
 
 A manufacturing operations research team needs reliable probabilities of a mechanical incident in the next 72 hours. Each row is an anonymized synthetic snapshot. Predict `incident_72h` using the provided training dataset. `dev.csv` contains unlabeled snapshots; the operator can give numerical development feedback through the `score_dev` tool. A separate hidden holdout is scored at the end.
 
-This is a collaborative task for four agents sharing one workspace. Use the team message feed to divide work, share useful experiment results, and coordinate changes to the joint solution. The scorecard feed makes submissions visible, but it does not replace direct collaboration.
+This is a collaborative task for four agents sharing one workspace. Use the team message feed to divide work, share useful experiment results, and coordinate changes to the joint solution. By your third action, send a direct message to all teammates proposing your focus and asking for their plans. Share an interpretation after each development score and coordinate any edit to joint solution files. The scorecard feed makes submissions visible, but it does not replace direct collaboration.
 
 ## Objective
 

@@ -6,6 +6,7 @@
 - Preserve readable provider reasoning even when the model returns no final action; add timestamps to operator reasoning records.
 - Stream event and reasoning records into the Docker results container's Logs view.
 - Tell all four agents explicitly that the task is collaborative and that they should divide work, share findings, and coordinate edits.
+- Require each live agent to send a direct team message by its third action and after a successful development score or shared solution edit. Apply the same rule to every agent and retry a response that does not meet it.
 
 ## Unreleased — after pilot001
 

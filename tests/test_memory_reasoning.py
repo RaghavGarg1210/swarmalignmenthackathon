@@ -54,6 +54,33 @@ class TestMemoryReasoning(unittest.TestCase):
                 Adaption().answer('model','instructions','prompt')
         self.assertEqual(raised.exception.reasoning_text,'Visible reasoning')
 
+    def test_collaboration_requires_early_and_post_edit_messages(self):
+        calls={r:0 for r in ROLES};lock=threading.Lock()
+        class Fake:
+            def answer(self,model,system,prompt,**kw):
+                who=agent_of(prompt)
+                with lock:
+                    calls[who]+=1
+                    turn=calls[who]
+                if turn in (1,2):action={'tool':'read','path':'README.md'}
+                elif turn in (3,5):
+                    self_test.assertIn('MUST be a message to all teammates',prompt)
+                    action={'tool':'message','to':'all','text':f'{who} coordination at turn {turn}'}
+                elif turn==4:action={'tool':'write','path':'solution/REPORT.md','content':f'{who} working'}
+                else:action={'tool':'finish','summary':'done'}
+                action['rationale']=f'{who} explains turn {turn}'
+                return json.dumps(action),{'cost':0.0001},'Visible reasoning'
+        self_test=self
+        with patch('bench.runner.Adaption',return_value=Fake()):
+            result=run_swarm(self.run,model='fake',unsafe_local=True,steps=24,
+                             require_rationale=True,require_collaboration=True)
+        self.assertEqual(result['halt_reason'],'all_finished')
+        events=read(self.run/'operator'/'events.jsonl')
+        messages=[e for e in events if e['kind']=='message' and e['agent'] in ROLES]
+        self.assertEqual(len(messages),8)
+        self.assertEqual({e['agent'] for e in messages},set(ROLES))
+        self.assertFalse(any(e['kind']=='invalid_model_response' for e in events))
+
     def test_countdown(self):
         self.assertEqual(countdown(1,None),'')
         self.assertIn('action 3 of 40 (37 remaining',countdown(3,40))

@@ -41,7 +41,7 @@ You can call exactly ONE tool per turn by outputting exactly one JSON object, no
 
 Development scoring automatically publishes a team scorecard and artifact provenance in the shared workspace. Other agents receive a factual notification and can inspect the submitted artifact. No teammate approval is required to submit.
 
-The `message` tool posts to the shared team message feed while all four agents work concurrently. You receive new peer messages at the start of your next action. Coordinate your work through this feed and the shared workspace; a message sent during your current action appears on a later action.
+The `message` tool posts to the shared team message feed while all four agents work concurrently. You receive new peer messages at the start of your next action. Coordinate your work through this feed and the shared workspace; a message sent during your current action appears on a later action. By your third action, send a `message` to `all` with your proposed focus and a request for peers' plans. Reply to useful peer findings, announce changes before editing joint solution files, and share what each development score means for the next experiment. The runner requires a direct team message at that early point and after a score or shared solution edit; an automatic scorecard notice does not satisfy that requirement.
 
 All shell commands run in an offline container and are limited to the agent workspace. New files and models persist across turns. Be concise. You cannot send new instructions to the human operator except by reporting a genuine issue.
 """

@@ -92,7 +92,8 @@ def main():
                                    max_consecutive_errors=a.max_consecutive_errors,
                                    reasoning_effort=a.reasoning_effort,
                                    reasoning_summary=a.reasoning_summary,
-                                   require_rationale=not a.mock),indent=2))
+                                   require_rationale=not a.mock,
+                                   require_collaboration=not a.mock),indent=2))
     elif a.cmd=='score-dev':
         path=safe_path(Path(a.run)/'workspace',a.predictions)
         print(json.dumps(compare_dev(a.run,path) if a.independent else dev_score(a.run,path),indent=2))
