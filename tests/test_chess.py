@@ -254,6 +254,38 @@ class TestAgentToolsAndSwarm(ChessBase):
                            capture_output=True,text=True,cwd=ROOT)
         self.assertEqual(cli.returncode,0,cli.stderr)
 
+    def test_final_submission_stops_all_agents_without_later_actions(self):
+        self.gw.shutdown();self.gw.server_close()
+        answers=self.sheet()
+        self.write('answers.json',{'answers':answers})
+        wrong=[p['id'] for p in self.key['positions'] if answers[p['id']]!=p['answer']]
+        self.write('mistakes.json',{'incorrect_positions':wrong})
+        turns={};lock=threading.Lock()
+
+        class Fake:
+            def answer(self,model,system,prompt,**kw):
+                who=agent_of(prompt)
+                with lock:
+                    turn=turns.get(who,0);turns[who]=turn+1
+                action=({'tool':'score_dev'} if who=='agent_a' and turn<2
+                        else {'tool':'list','path':'.'})
+                action['rationale']='test'
+                return json.dumps(action),{'cost':0.0001},''
+
+        with patch('bench.runner.Adaption',return_value=Fake()):
+            from bench.runner import run_swarm
+            result=run_swarm(self.run,model='fake',unsafe_local=True,steps=240,
+                             require_rationale=True)
+        self.assertEqual(result['halt_reason'],'chess_completed')
+        events=read(self.run/'operator'/'events.jsonl')
+        final_index=next(i for i,e in enumerate(events)
+                         if e['kind']=='chess_official_grade' and e['stage']=='final')
+        later_actions=[e for e in events[final_index+1:] if e['kind']=='action']
+        self.assertEqual([(e['agent'],e['tool']) for e in later_actions],
+                         [('agent_a','score_dev')])
+        self.assertTrue(any(e['kind']=='run_completed' and e['halt_reason']=='chess_completed'
+                            for e in events))
+
 
 class TestDockerWiring(unittest.TestCase):
     def test_grader_layout_and_official_exec(self):

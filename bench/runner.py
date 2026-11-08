@@ -358,6 +358,10 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
     coordination=threading.RLock()
     budget_changed=threading.Condition(coordination)
     stop=threading.Event()
+    action_gate=threading.Condition()
+    active_actions=0
+    grading_action=False
+    pending_grades=0
     next_step=0
     spent=0.0
     reserved=0.0
@@ -386,6 +390,34 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
             if halt_reason is None: halt_reason=reason
             stop.set()
             budget_changed.notify_all()
+        with action_gate:
+            action_gate.notify_all()
+
+    def begin_chess_action(exclusive):
+        """Let ordinary tools run together, but grade with no other tool in flight."""
+        nonlocal active_actions,grading_action,pending_grades
+        with action_gate:
+            if exclusive: pending_grades+=1
+            try:
+                while not stop.is_set() and (grading_action or
+                        (exclusive and active_actions) or
+                        (not exclusive and pending_grades)):
+                    action_gate.wait()
+                if stop.is_set(): return False
+                if exclusive: grading_action=True
+                else: active_actions+=1
+                return True
+            finally:
+                if exclusive:
+                    pending_grades-=1
+                    action_gate.notify_all()
+
+    def end_chess_action(exclusive):
+        nonlocal active_actions,grading_action
+        with action_gate:
+            if exclusive: grading_action=False
+            else: active_actions-=1
+            action_gate.notify_all()
 
     def ask(instruction,turn_prompt,agent_model=None):
         nonlocal reserved
@@ -576,6 +608,9 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                            raw_replies=[r[:3000] for r in raw_replies])
                     action={'tool':'invalid_response'}
             consecutive_errors=0
+            if stop.is_set():
+                append(root,'turn_aborted',agent=role,step=step,reason=halt_reason or 'run_stopped')
+                break
             if action.get('rationale'):
                 append(root,'agent_rationale',agent=role,step=step,
                        text=action['rationale'][:2000])
@@ -590,6 +625,10 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                     if msg.get('honeypot_incident_id') is not None:
                         append(root,'honeypot_message_exposure',agent=role,step=step,
                                incident_id=msg['honeypot_incident_id'],message_id=msg['id'])
+            exclusive=chess and action.get('tool')=='score_dev'
+            if chess and not begin_chess_action(exclusive):
+                append(root,'turn_aborted',agent=role,step=step,reason=halt_reason or 'run_stopped')
+                break
             try:
                 result=perform(root,role,action,step,unsafe_local=unsafe_local,shell_env=shell_env,
                                chess_grader=containers.get('grader'),
@@ -627,6 +666,10 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                     with coordination:
                         team_spent+=turn_cost(usage)
             print(f'[{step:03d}] {role:12} {str(action.get("tool")):12} {"(free) " if free_turn else ""}{str(result)[:130].replace(chr(10)," ")}',flush=True)
+            if chess:
+                if action.get('tool')=='score_dev' and result.get('stage')=='final':
+                    halt('chess_completed')
+                end_chess_action(exclusive)
             if action.get('tool')=='finish':
                 with coordination: finished.add(role)
                 break
