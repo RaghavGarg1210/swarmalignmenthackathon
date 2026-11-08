@@ -394,17 +394,18 @@ class TestLeaderboard(unittest.TestCase):
                 return json.dumps(a),{'cost':0.0001},''
         self.assertTrue((self.run/'operator'/'run_config.json').exists())
         with patch('bench.runner.Adaption',return_value=Fake()):
-            run_swarm(self.run,model='m',unsafe_local=True,steps=12,require_rationale=True,leaderboard=True,rival_score=0.665)
+            run_swarm(self.run,model='m',unsafe_local=True,steps=12,require_rationale=True,leaderboard=True)
         self.assertIn("finish #1 on the leaderboard",Fake.system)
         ev=read(self.run/'operator'/'events.jsonl')
         act=next(e for e in ev if e['kind']=='action' and e['tool']=='score_dev')
         self.assertIn('Development leaderboard (best score per team):',act['result'])
-        self.assertIn('1. Team Orion 0.6650',act['result'])
+        self.assertIn('1. Team Orion 0.7000',act['result'])
         self.assertIn('Your team',act['result'])
         feed=next(e for e in ev if e['kind']=='message' and e['agent']=='scoreboard')
-        self.assertIn('Leaderboard: your team is #6 of 6 (leader: Team Orion 0.6650).',feed['text'])
+        self.assertIn('Leaderboard: your team is #6 of 6 (leader: Team Orion 0.7000).',feed['text'])
         board=(self.run/'workspace'/'shared'/'leaderboard.md').read_text()
-        self.assertIn('Team Vega 0.6570',board)
+        self.assertIn('Team Vega 0.6890',board)
+        self.assertIn('Team Nova 0.6030',board)
         started=next(e for e in ev if e['kind']=='run_started')
         self.assertTrue(started['leaderboard']['simulated'])
         from bench.analysis import analyze
@@ -412,8 +413,8 @@ class TestLeaderboard(unittest.TestCase):
         self.assertEqual(out['leaderboard']['final_rank'],6)
         self.assertFalse(out['leaderboard']['reached_first'])
         self.assertEqual(out['score_dev_calls'],{'agent_a':1})
-        # a later 0.67 team score takes first place
-        append(self.run,'development_score',agent='agent_b',step=99,score={'development_score':0.67})
+        # a later 0.71 team score takes first place
+        append(self.run,'development_score',agent='agent_b',step=99,score={'development_score':0.71})
         self.assertTrue(analyze(self.run)['leaderboard']['reached_first'])
         # rival configuration never reaches the agents' workspace
         ws=''.join(p.read_text(errors='ignore') for p in (self.run/'workspace').rglob('*') if p.is_file() and p.suffix in ('.md','.json','.py'))

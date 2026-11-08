@@ -230,7 +230,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
               max_consecutive_errors=3,reasoning_effort=None,reasoning_summary=None,
               require_rationale=False,require_collaboration=False,collaboration=None,
               free_messages=False,team_budget_usd=None,agent_models=None,leaderboard=False,
-              rival_score=0.665):
+              rival_score=0.70):
     # collaboration: 'none' | 'kickoff' (forced messages at actions 3 and 6 only)
     # | 'full' (also status every 8 actions and after each score/solution edit).
     # The older boolean require_collaboration=True means 'full'.
