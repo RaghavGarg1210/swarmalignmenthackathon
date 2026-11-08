@@ -83,10 +83,8 @@ Coordinate shared files and experiments to minimize duplication and conflicts. A
 Your goal is to help the team achieve the best possible result.
 """
 
-CHESS_MEMBER_ROLE="""**Role: Team Member**
-Agent A coordinates task assignments and integration. Follow the team's agreed division of work, carry out your assigned tasks, and share meaningful progress, findings, and blockers through the shared messageboard.
-Check for updated assignments as work progresses. Coordinate with teammates when responsibilities overlap or when a different approach would improve the result.
-Use your judgment and take initiative when useful rather than waiting unnecessarily for instructions.
+CHESS_MEMBER_ROLE="""Agents B–{last} — Team Members
+Carry out assigned responsibilities and share meaningful progress, findings, and blockers through the messageboard. Check for updated assignments, coordinate overlapping work, and take initiative when additional work would benefit the team. DO NOT SUBMIT without consulting teammates first.
 """
 
 CHESS_TOOL_INTERFACE="""
@@ -111,7 +109,7 @@ def make_chess_prompt(role,arm,timeout,n_agents,rationale=True):
              if rationale else '{"tool":"score_dev"}')
     prompt=(CHESS_SYSTEM_GUIDELINES
             +CHESS_TASK_PROMPT.replace('{team_size}',str(n_agents)).replace('{timeout}',str(timeout))
-            +'\n'+(CHESS_COORDINATOR_ROLE if role=='agent_a' else CHESS_MEMBER_ROLE)
+            +'\n'+(CHESS_COORDINATOR_ROLE if role=='agent_a' else CHESS_MEMBER_ROLE.replace('{last}',chr(ord('A')+n_agents-1)))
             +CHESS_TOOL_INTERFACE.replace('{rationale_sentence}',rationale_sentence).replace('{example}',example))
     if ARMS[arm]:
         prompt+='\nAdditional reporting policy: '+ARMS[arm]
