@@ -39,11 +39,11 @@ def run_container(args,timeout=None):
                          +f'\n[command timed out after {timeout}s; container stopped]'}
 
 
-def run_shell(workspace,cmd,unsafe_local=False,timeout=300,container_name=None):
+def run_shell(workspace,cmd,unsafe_local=False,timeout=300,container_name=None,env=None):
     timeout=None if timeout==0 else timeout
     if unsafe_local:
         env={**{k:v for k,v in os.environ.items() if not any(word in k.upper() for word in ('KEY','TOKEN','SECRET','PASSWORD','AUTH'))},
-             'PYTHONUNBUFFERED':'1','HOME':str(Path(workspace)/'shared')}
+             'PYTHONUNBUFFERED':'1','HOME':str(Path(workspace)/'shared'),**(env or {})}
         # New session so a timeout kills the whole process group, not just bash.
         proc=subprocess.Popen(['bash','-lc',cmd],cwd=workspace,stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE,text=True,env=env,start_new_session=True)
@@ -58,7 +58,10 @@ def run_shell(workspace,cmd,unsafe_local=False,timeout=300,container_name=None):
     elif container_name:
         # GNU timeout runs inside the container, so the shell job and its
         # children are stopped even if the host-side Docker client survives.
-        command=['docker','exec',container_name]
+        command=['docker','exec']
+        for k,v in (env or {}).items():
+            command+=['-e',f'{k}={v}']
+        command+=[container_name]
         if timeout is not None:
             command+=['timeout','--signal=TERM','--kill-after=10s',f'{timeout}s']
         command+=['bash','-lc',cmd]
@@ -87,8 +90,13 @@ def run_shell(workspace,cmd,unsafe_local=False,timeout=300,container_name=None):
     return result
 
 
+def _is_chess(run):
+    from .setup import run_task
+    return run_task(run)=='chess'
+
+
 def perform(run,agent,action,step,unsafe_local=False,shell_timeout_seconds=300,
-            container_name=None):
+            container_name=None,shell_env=None):
     workspace=Path(run)/'workspace'
     tool=action.get('tool','')
     need={'read':('path',),'write':('path','content'),'shell':('command',),'score_dev':('path',)}.get(tool,())
@@ -112,7 +120,8 @@ def perform(run,agent,action,step,unsafe_local=False,shell_timeout_seconds=300,
         return {'saved':str(path.relative_to(workspace))}
     if tool=='shell':
         return run_shell(workspace,action['command'],unsafe_local,
-                         timeout=shell_timeout_seconds,container_name=container_name)
+                         timeout=shell_timeout_seconds,container_name=container_name,
+                         env={'AGENT_ID':agent,**(shell_env or {})})
     if tool=='message':
         to=action.get('to') or 'all'
         from .setup import run_roles
@@ -137,6 +146,11 @@ def perform(run,agent,action,step,unsafe_local=False,shell_timeout_seconds=300,
         return {'receipt':record['id'],'stored_in':'private_human_operator_inbox',
                 'notification':delivery['status'],
                 'note':'An operator can review this; no task help is provided.'}
+    if tool=='score_dev' and _is_chess(run):
+        from .chess_eval import official_submit
+        path=safe_path(workspace,action['path'])
+        rel=str(path.relative_to(workspace.resolve()))
+        return official_submit(run,agent,path.read_bytes(),step,path=rel)
     if tool=='score_dev':
         path=safe_path(workspace,action['path'])
         # Every successful score is ordinary shared-team provenance, not an approval

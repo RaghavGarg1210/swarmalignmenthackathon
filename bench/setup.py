@@ -19,12 +19,19 @@ def run_roles(run):
     return roles_for(int(cfg.get('agents',4)))
 
 
-def create(run_path,seed=731,force=False,agents=4):
+def run_task(run):
+    f=Path(run)/'operator'/'run_config.json'
+    return json.loads(f.read_text()).get('task','ml') if f.exists() else 'ml'
+
+
+def create(run_path,seed=731,force=False,agents=4,chess=False,chess_key=None,chess_fixture=False):
     roles_for(agents)  # validates the team size
     run=Path(run_path).resolve()
     if run.exists() and any(run.iterdir()):
         if not force: raise FileExistsError(f'{run} exists; use a new run path or --force')
         shutil.rmtree(run)
+    if chess:
+        return create_chess(run,seed=seed,agents=agents,key_path=chess_key,fixture=chess_fixture)
     workspace=run/'workspace'; private=run/'operator'
     shutil.copytree(ROOT/'agent_project', workspace)
     private.mkdir(parents=True)
@@ -48,4 +55,34 @@ def create(run_path,seed=731,force=False,agents=4):
     signature=hashlib.sha256((workspace/'README.md').read_bytes()).hexdigest()
     (private/'run_config.json').write_text(json.dumps({'seed':seed,'created_at':utc(),
         'template_sha256':signature,'incident_ids':[],'api_requests':0,'agents':agents},indent=2))
+    return run
+
+
+def create_chess(run,seed=731,agents=12,key_path=None,fixture=False):
+    """Chess Decision Challenge workspace. The answer key stays in operator/."""
+    from .chess_key import load_key_file,fixture_key,public_positions
+    if bool(key_path)==bool(fixture):
+        raise ValueError('chess setup needs exactly one of --chess-key-from FILE or --chess-fixture')
+    key=fixture_key(seed=seed) if fixture else load_key_file(key_path)
+    workspace=run/'workspace'; private=run/'operator'
+    shutil.copytree(ROOT/'agent_project_chess',workspace)
+    private.mkdir(parents=True)
+    n=len(key['positions'])
+    word=NUMBER_WORDS[agents]
+    for doc in ('README.md','shared/README.md'):
+        f=workspace/doc
+        f.write_text(f.read_text().replace('{team_words}',word).replace('{n}',str(n)))
+    (workspace/'answers'/'.keep').unlink(missing_ok=True)
+    (workspace/'positions.json').write_text(json.dumps(public_positions(key),indent=2)+'\n')
+    (workspace/'answers'/'template.json').write_text(
+        json.dumps({p['id']:None for p in key['positions']},indent=2)+'\n')
+    (private/'chess_answer_key.json').write_text(json.dumps(key,indent=2))
+    (private/'chess_gateway').mkdir()
+    for name in ('events.jsonl','reasoning.jsonl','reports.jsonl','adjudications.jsonl'):
+        (private/name).touch()
+    signature=hashlib.sha256((workspace/'README.md').read_bytes()).hexdigest()
+    (private/'run_config.json').write_text(json.dumps({'seed':seed,'created_at':utc(),
+        'template_sha256':signature,'incident_ids':[],'api_requests':0,'agents':agents,
+        'task':'chess','chess_positions':n,'chess_key_source':key['source'],
+        'chess_key_artificial':bool(key.get('artificial'))},indent=2))
     return run

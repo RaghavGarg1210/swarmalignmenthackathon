@@ -13,6 +13,16 @@ def container_names(run):
     return f'swarm-agents-{slug}-{suffix}',f'swarm-results-{slug}-{suffix}'
 
 
+ROOT=Path(__file__).resolve().parents[1]
+CHESS_SOCKET_DIR='/run/chess-submission'
+
+
+def chess_names(run):
+    agents,_=container_names(run)
+    suffix=agents[len('swarm-agents-'):]
+    return f'swarm-grader-{suffix}',f'swarm-chess-sock-{suffix}'
+
+
 def _start(command):
     result=subprocess.run(command,capture_output=True,text=True)
     if result.returncode:
@@ -32,7 +42,44 @@ def _limits(want_cpus=8,want_mem_bytes=6*1024**3):
     return str(cpus),f'{mem_bytes//1024**2}m'
 
 
-def start_run_containers(run):
+def _start_chess_grader(root):
+    """Grader container + shared socket volume for the Chess Decision Challenge.
+
+    The grader holds the answer key and the gateway code; the agents' container
+    only shares the volume that contains the Unix socket. A named volume keeps
+    the socket inside Docker's VM, so this also works with Docker Desktop.
+    """
+    grader,volume=chess_names(root)
+    _start(['docker','volume','create','--label','swarm-integrity.role=chess-socket',volume])
+    # A fresh named volume is root-owned; hand it to the unprivileged run user.
+    _start(['docker','run','--rm','--network','none','--user','0','-v',f'{volume}:/v',IMAGE,
+            'chown',f'{os.getuid()}:{os.getgid()}','/v'])
+    _start(['docker','run','-d','--network','none','--read-only',
+            '--cap-drop','ALL','--security-opt','no-new-privileges',
+            '--tmpfs','/tmp:rw,noexec,nosuid,size=64m',
+            '--user',f'{os.getuid()}:{os.getgid()}',
+            '-e','PYTHONDONTWRITEBYTECODE=1','-e','HOME=/tmp','-e','PYTHONPATH=/grader',
+            '--name',grader,'--label','swarm-integrity.role=grader',
+            '--pids-limit','128','--memory','512m','--cpus','1',
+            '-v',f'{ROOT / "bench"}:/grader/bench:ro',
+            '-v',f'{root / "operator" / "chess_answer_key.json"}:/grader/key.json:ro',
+            '-v',f'{root / "operator" / "chess_gateway"}:/grader/state:rw',
+            '-v',f'{volume}:{CHESS_SOCKET_DIR}',
+            IMAGE,'python','-m','bench.chess_gateway','--socket',f'{CHESS_SOCKET_DIR}/sock',
+            '--key','/grader/key.json','--state','/grader/state'])
+    return grader,volume
+
+
+def _wait_for_socket(container,timeout=30):
+    import time
+    for _ in range(timeout*2):
+        r=subprocess.run(['docker','exec',container,'test','-S',f'{CHESS_SOCKET_DIR}/sock'],capture_output=True)
+        if r.returncode==0:return
+        time.sleep(0.5)
+    raise RuntimeError('chess submission gateway did not start (no socket); see `docker logs` for the grader container')
+
+
+def start_run_containers(run,chess=False):
     """Keep agent code and private operator results in separate offline containers.
 
     The host runner retains the API key and evaluator. The agent container mounts
@@ -42,6 +89,10 @@ def start_run_containers(run):
     root=Path(run).resolve()
     agents,results=container_names(root)
     cpus,memory=_limits()
+    extra=[]
+    if chess:
+        grader,volume=_start_chess_grader(root)
+        extra=['-v',f'{volume}:{CHESS_SOCKET_DIR}']
     common=['docker','run','-d','--network','none','--read-only',
             '--cap-drop','ALL','--security-opt','no-new-privileges',
             '--tmpfs','/tmp:rw,noexec,nosuid,size=256m',
@@ -49,7 +100,7 @@ def start_run_containers(run):
             '-e','PYTHONDONTWRITEBYTECODE=1','-e','HOME=/tmp']
     _start(common+['--name',agents,'--label','swarm-integrity.role=agents',
                    '--pids-limit','512','--memory',memory,'--cpus',cpus,
-                   '-v',f'{root / "workspace"}:/workspace:rw','-w','/workspace',
+                   '-v',f'{root / "workspace"}:/workspace:rw','-w','/workspace',*extra,
                    IMAGE,'sleep','infinity'])
     try:
         _start(common+['--name',results,'--label','swarm-integrity.role=results',
@@ -58,7 +109,12 @@ def start_run_containers(run):
                        IMAGE,'tail','-n','+1','-F',
                        '/results/operator/events.jsonl',
                        '/results/operator/reasoning.jsonl'])
+        if chess:
+            _wait_for_socket(agents)
     except Exception:
-        subprocess.run(['docker','rm','-f',agents],capture_output=True)
+        subprocess.run(['docker','rm','-f',agents,results]+([grader] if chess else []),capture_output=True)
         raise
-    return {'agents':agents,'results':results}
+    out={'agents':agents,'results':results}
+    if chess:
+        out.update(grader=grader,chess_socket_volume=volume)
+    return out

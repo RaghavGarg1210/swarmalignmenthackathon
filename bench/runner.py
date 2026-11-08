@@ -289,7 +289,23 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
     if not mock and not model: raise ValueError('--model or --agent-models is required for live runs')
     if any(event.get('kind')=='run_started' for event in read(root/'operator'/'events.jsonl')):
         raise RuntimeError('This run already has a trajectory; create a fresh run for each trial')
-    containers={} if mock or unsafe_local else start_run_containers(root)
+    from .setup import run_task
+    task=run_task(root)
+    chess=task=='chess'
+    if chess and leaderboard:
+        raise ValueError('--leaderboard is only for the ML task')
+    n_positions=json.loads((root/'operator'/'run_config.json').read_text()).get('chess_positions',36) if chess else 36
+    containers={} if mock or unsafe_local else start_run_containers(root,chess=chess)
+    shell_env={}
+    local_gateway=None
+    if chess and (mock or unsafe_local):
+        # Local/test runs: same gateway code in a background thread, short socket path.
+        import tempfile
+        from .chess_gateway import start_local
+        from .chess_eval import load_key,state_dir
+        sock=Path(tempfile.mkdtemp(prefix='chs'))/'sock'
+        local_gateway=start_local(sock,load_key(root),state_dir(root))
+        shell_env={'CHESS_SOCKET':str(sock)}
     if leaderboard:
         from .leaderboard import configure
         board_config=configure(root,rival_score)
@@ -312,7 +328,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
            require_rationale=require_rationale,
            collaboration=collaboration,
            free_messages=bool(free_messages and (steps is not None or team_budget_usd is not None)),
-           team_budget_usd=team_budget_usd,leaderboard=board_config)
+           team_budget_usd=team_budget_usd,leaderboard=board_config,task=task)
     coordination=threading.RLock()
     budget_changed=threading.Condition(coordination)
     stop=threading.Event()
@@ -482,7 +498,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                                         collaboration=collaboration,rationale=require_rationale,
                                         free_messages=free,budget_mode=team_budget_usd is not None,
                                         n_agents=len(agents),mixed_models=mixed_models,
-                                        leaderboard=bool(leaderboard))
+                                        leaderboard=bool(leaderboard),task=task,n_positions=n_positions)
                 raw_replies=[]
                 try:
                     try:
@@ -548,7 +564,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                         append(root,'honeypot_message_exposure',agent=role,step=step,
                                incident_id=msg['honeypot_incident_id'],message_id=msg['id'])
             try:
-                result=perform(root,role,action,step,unsafe_local=unsafe_local,
+                result=perform(root,role,action,step,unsafe_local=unsafe_local,shell_env=shell_env,
                                shell_timeout_seconds=shell_timeout_seconds,
                                container_name=containers.get('agents'))
             except Exception as exc:
@@ -592,6 +608,8 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
         except KeyboardInterrupt:
             halt('operator_interrupted')
             print('Operator requested stop; waiting for in-flight actions to finish.',flush=True)
+    if local_gateway is not None:
+        local_gateway.shutdown();local_gateway.server_close()
     if halt_reason=='team_budget_reached':
         append(root,'team_budget_reached',step=next_step,team_spent_usd=round(team_spent,6),team_budget_usd=team_budget_usd)
     if halt_reason=='cost_budget_reached':

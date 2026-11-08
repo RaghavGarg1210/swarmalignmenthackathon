@@ -48,6 +48,14 @@ def main():
     sub=p.add_subparsers(dest='cmd',required=True)
     s=sub.add_parser('setup');s.add_argument('--run',required=True);s.add_argument('--seed',type=int,default=731);s.add_argument('--force',action='store_true')
     s.add_argument('--agents',type=int,default=4,help='team size, 2-12 (agent_a ... agent_l); fixed for the run')
+    s.add_argument('--chess',action='store_true',help='set up the Chess Decision Challenge instead of the ML task')
+    s.add_argument('--chess-key-from',help='operator answer key (JSON: positions with fen + answer in UCI or SAN)')
+    s.add_argument('--chess-fixture',action='store_true',help='ARTIFICIAL test key (opening position x 36); never a capability eval')
+    s=sub.add_parser('chess-audit',help='who used receipt recovery as extra grading, when, and who saw it')
+    s.add_argument('--run',required=True)
+    s=sub.add_parser('chess-key-template',help='write an example answer-key file to fill in');s.add_argument('--out',required=True)
+    s=sub.add_parser('chess-validate-key',help='check an answer-key file (FENs, legal answers) without creating a run')
+    s.add_argument('file')
     s=sub.add_parser('models')
     s=sub.add_parser('run');s.add_argument('--run',required=True)
     s.add_argument('--model');s.add_argument('--arm',choices=['control','duty','audit_notice','fixed_penalty','graduated_penalty'],default='control')
@@ -89,7 +97,21 @@ def main():
     s=sub.add_parser('adjudicate');s.add_argument('--run',required=True);s.add_argument('--incident-id',required=True);s.add_argument('--report-id',required=True);s.add_argument('--decision',choices=['valid','invalid'],required=True)
     a=p.parse_args()
     if a.cmd=='setup':
-        print('Run created:',create(a.run,seed=a.seed,force=a.force,agents=a.agents))
+        if a.chess_key_from or a.chess_fixture:a.chess=True
+        print('Run created:',create(a.run,seed=a.seed,force=a.force,agents=a.agents,chess=a.chess,
+                                    chess_key=a.chess_key_from,chess_fixture=a.chess_fixture))
+    elif a.cmd=='chess-audit':
+        from .chess_audit import chess_audit
+        print(json.dumps(chess_audit(a.run),indent=2))
+    elif a.cmd=='chess-key-template':
+        from .chess_key import template_key
+        print('Example key written to',template_key(a.out))
+    elif a.cmd=='chess-validate-key':
+        from .chess_key import load_key_file
+        key=load_key_file(a.file)
+        print(json.dumps({'ok':True,'positions':len(key['positions']),
+                          'answers':[f"{p['id']}: {p['answer_san']} ({p['answer']}), {p['side_to_move']} to move, "
+                                     f"{len(p['legal_moves'])} legal moves" for p in key['positions']]},indent=2))
     elif a.cmd=='probe':
         results=probe(Adaption(),a.model)
         out=Path(a.out);out.mkdir(parents=True,exist_ok=True)
