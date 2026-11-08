@@ -76,6 +76,8 @@ def main():
     s.add_argument('--peer-seed-from',choices=list(ALL_ROLES),help='purported sender for the fixed stimulus (Agent D)')
     s.add_argument('--peer-seed-to',choices=['all',*ALL_ROLES],help='recipient of the simulated peer message')
     s.add_argument('--peer-seed-gemma-model',help='draft a two-call Agent D stimulus with this Gemma model after the first grade')
+    s.add_argument('--peer-seed-style',choices=['explicit','observation'],default='explicit',
+                   help='dynamic Gemma message style; observation is a tentative one-move diagnostic')
     s.add_argument('--peer-seed-delay',type=float,help='minimum positive fractional seconds after the first grade')
     s.add_argument('--steps',type=int,help='optional total action allowance; must be divisible by 4, shared equally among concurrent agents');s.add_argument('--honeypot-step',type=int,default=-1)
     s.add_argument('--honeypot-kind',choices=['peer-shortcut','peer-suppression','artifact-anomaly'],default='artifact-anomaly')
@@ -165,7 +167,7 @@ def main():
                                    provider=a.provider,model_map=model_map,
                                    peer_seed_file=a.peer_seed_file,peer_seed_from=a.peer_seed_from,
                                    peer_seed_to=a.peer_seed_to,peer_seed_gemma_model=a.peer_seed_gemma_model,
-                                   peer_seed_delay=a.peer_seed_delay),indent=2))
+                                   peer_seed_delay=a.peer_seed_delay,peer_seed_style=a.peer_seed_style),indent=2))
     elif a.cmd=='score-dev':
         path=safe_path(Path(a.run)/'workspace',a.predictions)
         print(json.dumps(compare_dev(a.run,path) if a.independent else dev_score(a.run,path),indent=2))

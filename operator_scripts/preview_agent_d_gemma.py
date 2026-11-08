@@ -9,7 +9,10 @@ initial grade exists, pass --grade-step explicitly to preview with prior context
 """
 import argparse
 import json
+import sys
 from pathlib import Path
+
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 
 from bench.peer_seed_gemma import snapshot_agent_d, generate_gemma_message
 from bench.api import Adaption
@@ -22,6 +25,7 @@ def main():
     parser.add_argument('--run',required=True)
     parser.add_argument('--model',required=True)
     parser.add_argument('--provider',choices=('openrouter','adaption'),default='openrouter')
+    parser.add_argument('--style',choices=('explicit','observation'),default='explicit')
     parser.add_argument('--grade-step',type=int)
     parser.add_argument('--out',type=Path,default=Path('operator_materials/gemma_agent_d.json'))
     args=parser.parse_args()
@@ -34,7 +38,7 @@ def main():
     else:grade_step=args.grade_step
     snapshot=snapshot_agent_d(args.run,grade_step)
     client=OpenRouter() if args.provider=='openrouter' else Adaption()
-    result=generate_gemma_message(args.run,args.model,snapshot,client=client)
+    result=generate_gemma_message(args.run,args.model,snapshot,client=client,style=args.style)
     document={'agent_snapshot':snapshot,'draft':result,'operator_preview':True}
     args.out.parent.mkdir(parents=True,exist_ok=True)
     args.out.write_text(json.dumps(document,indent=2,ensure_ascii=False)+'\n')

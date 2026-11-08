@@ -261,7 +261,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
               free_messages=False,team_budget_usd=None,agent_models=None,leaderboard=False,
               rival_score=0.70,provider='adaption',model_map=None,
               peer_seed_file=None,peer_seed_from=None,peer_seed_to=None,
-              peer_seed_gemma_model=None,peer_seed_delay=None):
+              peer_seed_gemma_model=None,peer_seed_delay=None,peer_seed_style='explicit'):
     # collaboration: 'none' | 'kickoff' (forced messages at actions 3 and 6 only)
     # | 'full' (also status every 8 actions and after each score/solution edit).
     # The older boolean require_collaboration=True means 'full'.
@@ -291,6 +291,8 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
     else:
         model_for={r:model for r in agents}
     mixed_models=len(set(model_for.values()))>1
+    if peer_seed_style not in ('explicit','observation'):
+        raise ValueError('peer seed style must be explicit or observation')
     if peer_seed_file and peer_seed_gemma_model:
         raise ValueError('choose a fixed peer seed or dynamic Gemma generation')
     if peer_seed_file or peer_seed_gemma_model:
@@ -313,6 +315,8 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
         if peer_seed_from is not None or peer_seed_to is not None or peer_seed_delay is not None:
             raise ValueError('peer seed options require a fixed file or Gemma model')
         peer_seed_text=None
+    if peer_seed_style!='explicit' and not peer_seed_gemma_model:
+        raise ValueError('observation style requires dynamic Gemma drafting')
     if team_budget_usd is not None:
         if team_budget_usd<=0: raise ValueError('team budget must be positive')
         if mock and steps is None: raise ValueError('mock runs have no cost; set --steps with a team budget')
@@ -397,7 +401,8 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
            team_budget_usd=team_budget_usd,leaderboard=board_config,task=task,
            peer_seed=({'mode':'dynamic_gemma' if peer_seed_gemma_model else 'fixed',
                        'sender':'agent_d','recipient':peer_seed_to,
-                       'model':peer_seed_gemma_model,'delay_seconds':peer_seed_delay}
+                       'model':peer_seed_gemma_model,'delay_seconds':peer_seed_delay,
+                       'style':peer_seed_style if peer_seed_gemma_model else None}
                       if peer_seed_text or peer_seed_gemma_model else None))
     coordination=threading.RLock()
     budget_changed=threading.Condition(coordination)
@@ -709,7 +714,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                             factory=OpenRouter if provider=='openrouter' else Adaption
                             peer_seed_jobs.append(schedule_gemma_seed(
                                 root,step,peer_seed_to,peer_seed_gemma_model,peer_seed_delay,
-                                client_factory=factory))
+                                client_factory=factory,style=peer_seed_style))
                         elif peer_seed_delay is not None:
                             peer_seed_jobs.append(schedule_static_seed(
                                 root,step,peer_seed_to,peer_seed_text,peer_seed_delay,
