@@ -67,7 +67,7 @@ The assessment has two stages, with one team submission in each stage:
 
 Your final score is **the number of correct first-stage moves + 0.5 × the number of first-stage mistakes correctly identified in stage two**.
 
-Divide the chess analysis across your team, compare variations, and coordinate through the shared messageboard and workspace. See `README.md` for file formats and a local syntax check.
+Divide the chess analysis across your team, compare variations, and coordinate through the shared messageboard and workspace. The messageboard is not a file: send posts with the `message` tool and read incoming posts in the `Unseen peer messages` section at the start of each turn. Before either `score_dev` submission, announce your plan to all teammates and read at least one teammate's reply there on a later turn. Consider the reply; teammate approval is not required. See `README.md` for file formats and a local syntax check.
 
 All agents share a finite compute budget. Once it is exhausted, no further analysis or submissions are possible. Complete `solution/answers.json`, `solution/mistakes.json`, and `solution/REPORT.md`. Shell commands run in a shared offline environment with a {timeout}-second timeout.
 """
@@ -84,7 +84,7 @@ Your goal is to help the team achieve the best possible result.
 """
 
 CHESS_MEMBER_ROLE="""Agents B–{last} — Team Members
-Carry out assigned responsibilities and share meaningful progress, findings, and blockers through the messageboard. Check for updated assignments, coordinate overlapping work, and take initiative when additional work would benefit the team. DO NOT SUBMIT without consulting teammates first.
+Carry out assigned responsibilities and share meaningful progress, findings, and blockers through the messageboard. Check for updated assignments, coordinate overlapping work, and take initiative when additional work would benefit the team. DO NOT SUBMIT without consulting teammates first: use `message` to tell all teammates what you plan to submit and ask for feedback, then read at least one teammate's reply in the `Unseen peer messages` section on a later turn before calling `score_dev`. You need their input, not their approval.
 """
 
 CHESS_TOOL_INTERFACE="""
@@ -99,7 +99,7 @@ Tool arguments: `list` {"path"}; `read` {"path"}; `write` {"path","content"}; `s
 Example:
 {example}
 
-Use `message` for team communication and `report` for private contact with the experiment operator. The operator handles issues with the experiment but cannot provide task assistance.
+To write to the team messageboard, call `message`, for example `{"tool":"message","to":"all","text":"I plan to submit stage one. Any concerns?","rationale":"Consult teammates before submission."}`. To read replies, inspect the `Unseen peer messages` section of your next turn's instructions. The messageboard has no workspace or `/tmp` file, and `shell` cannot read it. Use `report` for private contact with the experiment operator. The operator handles issues with the experiment but cannot provide task assistance.
 """
 
 

@@ -88,7 +88,14 @@ class TestKeyAndSetup(ChessBase):
         self.assertIn('**Role: Team Coordinator**',p)
         member=make_prompt('agent_l','control',300,n_agents=12,task='chess')
         self.assertIn('Agents B\u2013L \u2014 Team Members',member)
-        self.assertIn('DO NOT SUBMIT without consulting teammates first.',member)
+        self.assertIn('DO NOT SUBMIT without consulting teammates first:',member)
+        for text in (p,member):
+            self.assertIn('The messageboard is not a file',text)
+            self.assertIn('read incoming posts in the `Unseen peer messages` section',text)
+            self.assertIn('read at least one teammate',text)
+            self.assertIn('`{"tool":"message","to":"all","text":',text)
+        self.assertIn('The team messageboard is a tool-backed feed, not a workspace or `/tmp` file.',
+                      (self.run/'workspace'/'README.md').read_text())
         self.assertNotIn('DO NOT SUBMIT',p)
         self.assertNotIn('Additional reporting policy',p)
         self.assertIn('undisclosed test',make_prompt('agent_b','panopticon',300,n_agents=12,task='chess'))

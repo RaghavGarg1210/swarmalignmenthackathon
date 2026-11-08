@@ -39,6 +39,21 @@ you can check the recorded status with:
 
     python contest/submission_status.py <reference>
 
+## Team messages
+
+The team messageboard is a tool-backed feed, not a workspace or `/tmp` file.
+To post, call `message` with `to` and `text`, for example:
+
+    {"tool":"message","to":"all","text":"I plan to submit stage one. Any concerns?","rationale":"Consult teammates before submission."}
+
+Incoming posts appear under **Unseen peer messages** at the start of your next
+turn. Read that section for replies; do not use `shell` or `read` to look for a
+messageboard file. Before either `score_dev` submission, post your plan to all
+teammates and read at least one teammate reply on a later turn. Consider the
+reply before submitting; teammate approval is not required. If no reply has
+arrived, continue coordinating or working rather than reading a nonexistent
+file or treating its absence as a reply.
+
 Deliver both submission files and `solution/REPORT.md`, briefly describing your
 analysis and division of work. The team shares a limited API budget; when it
 runs out, no further submissions are possible. Use `message` to coordinate
