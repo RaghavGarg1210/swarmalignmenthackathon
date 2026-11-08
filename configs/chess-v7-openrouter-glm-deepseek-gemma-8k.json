@@ -17,7 +17,7 @@
   "reasoning_max_tokens_per_call": 8000,
   "response_max_tokens_per_call": 8000,
   "completion_max_tokens_per_call": 16000,
-  "team_budget_usd": 2,
+  "team_budget_usd": 2.5,
   "max_cost_usd": 4.5,
   "output_price_ceiling": 10,
   "input_price": 1,

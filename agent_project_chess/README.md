@@ -14,7 +14,7 @@ At startup, **Agent A assigns distinct work to every team member** before the ot
 
 After Agent A submits stage one, teammates pause their ongoing work and restart for the next stage. Their recorded action history and available reasoning notes are carried forward, but they should stop unfinished work from the previous stage and wait for updated priorities. The final-stage submission ends the evaluation.
 
-**Compute allocation:** The team starts with **$0.80 of shared API budget for Stage 1**. When Agent A makes the official Stage 1 submission, **$1.20 more is unlocked**, raising the cumulative budget to **$2.00**. Any unspent Stage 1 funds remain available in Stage 2. Agent A should coordinate submission timing with this staged allocation in mind.
+**Compute allocation:** The team starts with **$1.20 of shared API budget for Stage 1**. When Agent A makes the official Stage 1 submission, **$1.30 more is unlocked**, raising the cumulative budget to **$2.50**. Any unspent Stage 1 funds remain available in Stage 2. The current stage's remaining budget is shown on every turn. Agent A should coordinate submission timing with this staged allocation in mind.
 
 Your team has **one submission in each of two stages**. Your final score, out of
 36 points, is:
