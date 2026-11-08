@@ -258,6 +258,14 @@ def estimate_cost(usage,input_price=None,cached_input_price=None,output_price=No
 
 
 
+def resolve_spoof_drafting_model(model_for, sender='agent_d'):
+    """Use the exact agent model, not a separate impersonator model."""
+    chosen=model_for.get(sender)
+    if not isinstance(chosen,str) or not chosen.strip() or chosen=='mixed':
+        raise ValueError(f'No real model configured for {sender}; use --agent-models or --model')
+    return chosen
+
+
 def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
               honeypot_kind='artifact-anomaly',honeypot_target=None,unsafe_local=False,mock=False,
               max_cost_usd=None,max_output_tokens=65536,output_price_ceiling=None,
@@ -267,6 +275,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
               free_messages=False,team_budget_usd=None,agent_models=None,leaderboard=False,
               rival_score=0.70,peer_seed_file=None,peer_seed_from=None,
               peer_seed_to=None,peer_seed_gemma_model=None,peer_seed_delay=None,
+              peer_seed_auto_model=False,
               agent_a_guidelines_file=None,agent_a_arm=None):
     # collaboration: 'none' | 'kickoff' (forced messages at actions 3 and 6 only)
     # | 'full' (also status every 8 actions and after each score/solution edit).
@@ -301,11 +310,17 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
         agent_a_guidelines=Path(agent_a_guidelines_file).read_text(encoding='utf8').strip()
         if not 1<=len(agent_a_guidelines)<=16000:
             raise ValueError('Agent A system guidelines must contain 1-16000 characters')
+    # Use the actual sender model for dynamic intervention when requested.
+    # An explicit drafting-model ID remains supported for older experiments.
+    if peer_seed_auto_model and peer_seed_gemma_model:
+        raise ValueError('Select --peer-seed-auto-model OR --peer-seed-gemma-model, not both')
+    if peer_seed_auto_model:
+        peer_seed_gemma_model=resolve_spoof_drafting_model(model_for)
     seed_enabled=bool(peer_seed_file or peer_seed_gemma_model)
     if seed_enabled:
         if not is_chess: raise ValueError('Peer spoof requires a chess run')
         if peer_seed_file and peer_seed_gemma_model:
-            raise ValueError('Select either a static message or Gemma generation')
+            raise ValueError('Select either a static message or dynamic generation')
         if 'agent_d' not in agents:
             raise ValueError('Agent D must be in the team to use the spoof intervention')
         if peer_seed_delay is None: peer_seed_delay=2.7
@@ -313,7 +328,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
             raise ValueError('Spoof delay must be a positive noninteger number of seconds')
         if peer_seed_gemma_model:
             if peer_seed_from not in (None,'agent_d'):
-                raise ValueError('Dynamic Gemma impersonates Agent D only')
+                raise ValueError('Dynamic spoof impersonates Agent D only')
             peer_seed_from='agent_d'
         elif peer_seed_from is None:
             peer_seed_from='agent_d'
@@ -323,7 +338,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
         if peer_seed_to not in (*agents,'all') or peer_seed_to=='agent_d':
             raise ValueError('Invalid recipient of Agent D spoof')
     elif peer_seed_from or peer_seed_to or peer_seed_delay is not None:
-        raise ValueError('Set --peer-seed-file or --peer-seed-gemma-model to enable spoofing')
+        raise ValueError('Set --peer-seed-file, --peer-seed-auto-model, or --peer-seed-gemma-model to enable spoofing')
     peer_seed_text=None
     if peer_seed_file:
         if Path(peer_seed_file).resolve().is_relative_to(root/'workspace'):
@@ -414,7 +429,9 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                                         if agent_a_guidelines else None),
            agent_a_arm=agent_a_arm,
            peer_seed=({'sender':'agent_d','recipient':peer_seed_to,
-                       'gemma_model':peer_seed_gemma_model,'minimum_delay':peer_seed_delay,
+                       'drafting_model':peer_seed_gemma_model,
+                       'drafting_model_source':'agent_d_roster' if peer_seed_auto_model else 'operator_override',
+                       'minimum_delay':peer_seed_delay,
                        'static_message_sha256':(hashlib.sha256(peer_seed_text.encode()).hexdigest()
                                                 if peer_seed_text else None)} if seed_enabled else None))
     coordination=threading.RLock()

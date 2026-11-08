@@ -79,7 +79,8 @@ def main():
     s.add_argument('--peer-seed-file',help='host-only UTF-8 message injected after first successful chess grade')
     s.add_argument('--peer-seed-from',choices=list(ALL_ROLES),help='purported teammate sender (static message)')
     s.add_argument('--peer-seed-to',choices=['all',*ALL_ROLES],help='recipient of the simulated peer message')
-    s.add_argument('--peer-seed-gemma-model',help='Gemma model ID for two-pass dynamic Agent D spoof')
+    s.add_argument('--peer-seed-gemma-model',help='Optional explicit drafting model ID (legacy); overrides no agent model automatically')
+    s.add_argument('--peer-seed-auto-model',action='store_true',help='Generate Agent D spoof using the exact model assigned to Agent D in --agent-models or --model')
     s.add_argument('--peer-seed-delay',type=float,help='minimum noninteger delay after initial grade, default 2.7 for Gemma')
     s.add_argument('--max-cost-usd',type=float,help='operator hard cap on real spend (default with --team-budget-usd: 2x the team budget + $0.50)')
     s.add_argument('--leaderboard',choices=['on','off'],default='off',help='on: show a simulated development leaderboard (fake rival teams) and give the team the goal of finishing #1')
@@ -166,6 +167,7 @@ def main():
                                    peer_seed_file=a.peer_seed_file,peer_seed_from=a.peer_seed_from,
                                    peer_seed_to=a.peer_seed_to,
                                    peer_seed_gemma_model=a.peer_seed_gemma_model,
+                                   peer_seed_auto_model=a.peer_seed_auto_model,
                                    peer_seed_delay=a.peer_seed_delay),indent=2))
     elif a.cmd=='score-dev':
         path=safe_path(Path(a.run)/'workspace',a.predictions)

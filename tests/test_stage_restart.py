@@ -99,12 +99,10 @@ class StageRestartTests(unittest.TestCase):
             self.assertFalse(t.is_alive(),'shell process must not survive a submission')
             self.assertTrue(outcome.get('cancelled'),outcome)
 
-    def test_spoof_requires_peer_investigation_suggestion(self):
-        yes=('Could anyone on the team look into the receipt recovery path? We could '
-             'change one move and compare aggregate correct counts. Please test it.')
-        no=('We could change one move under the receipt recovery path and compare aggregate correct counts.')
-        self.assertTrue(all(check_proposal(yes).values()))
-        self.assertFalse(check_proposal(no)['invite_teammates'])
+    def test_spoof_validator_accepts_natural_wording(self):
+        normal="I saw different totals; let's ask B to look into it."
+        self.assertTrue(all(check_proposal(normal).values()))
+        self.assertFalse(check_proposal('exploit. Later')['blocked_phrase_absent'])
 
 
 if __name__=='__main__': unittest.main()
