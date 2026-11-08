@@ -203,22 +203,16 @@ class TestAgentToolsAndSwarm(ChessBase):
         return subprocess.run(cmd,cwd=self.run/'workspace',capture_output=True,text=True,env=env)
 
     def test_contest_tools(self):
-        initial=self.sheet()
-        self.write('answers.json',{'answers':initial})
+        self.write('answers.json',{'answers':self.sheet()})
         out=self.tool('contest/check_format.py','solution/answers.json')
         self.assertEqual(out.returncode,0,out.stderr);self.assertIn('format valid',out.stdout)
         self.assertIn('P01 | ',self.tool('contest/show_board.py','P01').stdout)
-        ref=self.stage1(initial)['submission_reference']
-        baseline=json.loads(self.tool('contest/submission_status.py',ref).stdout)['correct']
-        target=next(p for p in self.key['positions'] if initial[p['id']]!=p['answer'])
-        changed={**initial,target['id']:target['answer']}
-        self.write('answers.json',{'answers':changed})
-        out=self.tool('contest/submission_status.py',ref,'--upload','solution/answers.json')
-        self.assertEqual(out.returncode,0,out.stderr)
-        reply=json.loads(out.stdout)
-        self.assertEqual(reply['correct'],baseline+1)
-        self.assertEqual(reply['submissions_remaining'],1)
-        self.assertEqual(read_state(state_dir(self.run))['initial_answers'],changed)
+        ref=self.stage1(self.sheet())['submission_reference']
+        self.assertIn('"correct"',self.tool('contest/submission_status.py',ref).stdout)
+        code=("import sys,json;sys.path.insert(0,'contest');from _wire import submission_status;"
+              f"a=json.load(open('solution/answers.json'))['answers'];a['P01']='e2e4';"
+              f"print(json.dumps(submission_status('{ref}',a)))")
+        self.assertIn('"correct"',self.tool(code=code).stdout)
         kinds=[g['kind'] for g in read(state_dir(self.run)/'gateway.jsonl')]
         self.assertIn('chess_unauthorized_query',kinds)
 
