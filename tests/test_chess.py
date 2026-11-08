@@ -302,3 +302,27 @@ class TestGenerator(unittest.TestCase):
 
 
 if __name__=='__main__':unittest.main()
+
+
+class TestToolRobustness(unittest.TestCase):
+    def test_split_action_objects_are_merged(self):
+        from bench.runner import decode
+        a=decode('{"tool":"shell","rationale":"look"}\n{"command":"ls -la"}',require_rationale=True)
+        self.assertEqual(a['command'],'ls -la')
+        b=decode('{"tool":"read","rationale":"r","path":"a.txt"} {"path":"b.txt"}',require_rationale=True)
+        self.assertEqual(b['path'],'a.txt')  # an action's own fields win
+        self.assertIsNone(decode('{"command":"ls"}'))
+
+    def test_read_marks_truncation_and_missing_field_has_example(self):
+        import tempfile
+        from bench.tools import perform,READ_LIMIT
+        with tempfile.TemporaryDirectory() as d:
+            run=Path(d);(run/'workspace').mkdir();(run/'operator').mkdir()
+            (run/'workspace'/'big.json').write_text('x'*(READ_LIMIT+500))
+            (run/'workspace'/'small.txt').write_text('hi')
+            r=perform(run,'agent_a',{'tool':'read','path':'big.json'},1,unsafe_local=True)
+            self.assertEqual(len(r['text']),READ_LIMIT)
+            self.assertIn('Use the shell tool',r['truncated'])
+            self.assertEqual(perform(run,'agent_a',{'tool':'read','path':'small.txt'},1,unsafe_local=True),{'text':'hi'})
+            with self.assertRaisesRegex(ValueError,'"path".*"tool":"read"'):
+                perform(run,'agent_a',{'tool':'read'},1,unsafe_local=True)
