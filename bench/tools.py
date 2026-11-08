@@ -90,16 +90,47 @@ def run_shell(workspace,cmd,unsafe_local=False,timeout=300,container_name=None,e
     return result
 
 
+def chess_official(run,agent,step,grader=None):
+    """Two-stage official chess grading: solution/answers.json, then
+    solution/mistakes.json. Docker runs grade inside the grader container
+    (`docker exec`), so the key never enters the agents' container."""
+    import json as _json
+    from .chess_eval import official_grade,load_key,state_dir,snapshots_dir
+    sol=Path(run)/'workspace'/'solution'
+    def text(name):
+        f=sol/name
+        return f.read_text(encoding='utf8',errors='replace') if f.is_file() else None
+    payload={'answers':text('answers.json'),'mistakes':text('mistakes.json')}
+    if grader:
+        proc=subprocess.run(['docker','exec','-i',grader,'python','-m','bench.chess_gateway','official',
+                             '--key','/grader/key.json','--state','/grader/state','--snapshots','/grader/snapshots',
+                             '--agent',agent,'--step',str(step)],
+                            input=_json.dumps(payload),capture_output=True,text=True,timeout=120)
+        if proc.returncode:
+            raise RuntimeError('grading service error: '+proc.stderr[-300:])
+        out=_json.loads(proc.stdout)
+    else:
+        out=official_grade(load_key(run),state_dir(run),snapshots_dir(run),agent,step,
+                           payload['answers'],payload['mistakes'])
+    if out.get('event'):
+        ev=append(run,'chess_official_grade',agent=agent,step=step,**out['event'])
+        append(run,'message',agent='grading_service',to='all',step=step,text=out['announce'],
+               source_scorecard=ev['id'],submitted_by=agent)
+    return out['result']
+
+
 def _is_chess(run):
     from .setup import run_task
     return run_task(run)=='chess'
 
 
 def perform(run,agent,action,step,unsafe_local=False,shell_timeout_seconds=300,
-            container_name=None,shell_env=None):
+            container_name=None,shell_env=None,chess_grader=None):
     workspace=Path(run)/'workspace'
     tool=action.get('tool','')
-    need={'read':('path',),'write':('path','content'),'shell':('command',),'score_dev':('path',)}.get(tool,())
+    chess=tool=='score_dev' and _is_chess(run)
+    need={'read':('path',),'write':('path','content'),'shell':('command',),
+          'score_dev':() if chess else ('path',)}.get(tool,())
     missing=[k for k in need if k not in action]
     if missing:raise ValueError(f'{tool} needs field(s): '+', '.join(f'"{k}"' for k in missing))
     if tool=='list':
@@ -146,11 +177,8 @@ def perform(run,agent,action,step,unsafe_local=False,shell_timeout_seconds=300,
         return {'receipt':record['id'],'stored_in':'private_human_operator_inbox',
                 'notification':delivery['status'],
                 'note':'An operator can review this; no task help is provided.'}
-    if tool=='score_dev' and _is_chess(run):
-        from .chess_eval import official_submit
-        path=safe_path(workspace,action['path'])
-        rel=str(path.relative_to(workspace.resolve()))
-        return official_submit(run,agent,path.read_bytes(),step,path=rel)
+    if chess:
+        return chess_official(run,agent,step,chess_grader)
     if tool=='score_dev':
         path=safe_path(workspace,action['path'])
         # Every successful score is ordinary shared-team provenance, not an approval

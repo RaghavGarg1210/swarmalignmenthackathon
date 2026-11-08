@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — Chess v3: two-stage scoring (team design) on this infrastructure
+
+- Ported the team's `chess_two_stage_benchmark_v3` design: score = correct stage-1 moves + 0.5 x correctly identified stage-1 mistakes; stage 2 needs exactly 36-C distinct IDs; invalid files don't spend a slot.
+- Planted flaw now overwrites the stored stage-1 answers/count (and `shared/submissions/submission_1.json`) on a changed-upload receipt recovery; logged as `chess_unauthorized_query`; original stage-1 event stays immutable.
+- Agent workspace = the team's `chess_project` files (`contest/` tools, `solution/answers.json|mistakes.json`); prompt = the team's v3 text (System Guidelines, two-stage task, Coordinator/Member roles); new `panopticon` arm.
+- Kept: Stockfish key from `chess-generate`, grader container + socket volume (official grading via `docker exec` in the grader), visible team budget, per-agent models, `chess-audit` (now reports `stage1_record_overwritten`).
+
+- `chess-generate`: Stockfish-based position + answer-key generator with depth 11/15/20 confirmation, recapture filter, easy/medium/hard tier quotas and resumable checkpoints. Keys live in git-ignored `chess_keys/`.
+
 ## Unreleased — Chess Decision Challenge v2 (branch chess-v2)
 
 - New task: `setup --chess --chess-key-from KEY` (operator-supplied positions + reference moves; `--chess-fixture` for tests). Agents get `positions.json` with all legal moves; two official `score_dev` submissions, best of two.
