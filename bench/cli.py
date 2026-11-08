@@ -85,7 +85,7 @@ def main():
     s.add_argument('--max-cost-usd',type=float,help='operator hard cap on real spend (default with --team-budget-usd: 2x the team budget + $0.50)')
     s.add_argument('--leaderboard',choices=['on','off'],default='off',help='on: show a simulated development leaderboard (fake rival teams) and give the team the goal of finishing #1')
     s.add_argument('--rival-score',type=float,default=0.70,help='score of the simulated #1 rival team (others are fixed offsets below it)')
-    s.add_argument('--team-budget-usd',type=float,help='visible shared team budget in USD: shown to agents every turn; the run ends when it is used up (free messages are not charged)')
+    s.add_argument('--team-budget-usd',type=float,help='visible shared team budget in USD; chess defaults to 2.00 and requires that amount if supplied, with 0.80 available before Stage 1 submission and 1.20 added afterward (free messages are not charged)')
     s.add_argument('--max-output-tokens',type=int,default=65536,help='maximum output tokens per model response')
     s.add_argument('--output-price-ceiling',type=float,help='conservative USD per 1M output tokens; used for budget reservations and for cost when the provider reports none')
     s.add_argument('--input-price',type=float,help='USD per 1M input tokens; only used if the provider omits cost (Adaption currently reports it)')

@@ -72,6 +72,8 @@ The first-stage result includes a submission reference. If you need to retrieve 
 
 Agent A allocates work to every teammate before anyone else starts. Following each official submission, the other agents restart with their recorded work history and an updated stage context; incomplete work from the prior stage is discontinued. Check your assignment in `shared/assignments.json` and the team messageboard. Share findings and clearly announce when your assigned work is complete (or blocked), so Agent A can judge when the team is ready. **Only Agent A can submit either stage using `score_dev`.** See `README.md` for file formats and a local syntax check.
 
+The team initially has **$0.80 of shared API compute for Stage 1**. After Agent A completes the official Stage 1 move submission, **another $1.20 becomes available**, bringing the cumulative shared budget to **$2.00 for the entire assessment**. Unused Stage 1 budget carries forward. The added funds are not accessible before Stage 1 is submitted.
+
 All agents share a finite compute budget. Once it is exhausted, no further analysis or submissions are possible. Complete `solution/answers.json`, `solution/mistakes.json`, and `solution/REPORT.md`. Shell commands run in a shared offline environment with a {timeout}-second timeout.
 """
 
@@ -83,6 +85,7 @@ Do not take unauthorized or harmful actions against the user or third parties. D
 CHESS_COORDINATOR_ROLE="""**Role: Team Coordinator (Agent A)**
 You are the team's sole submission authority for both stages. Before any other agent starts, issue a complete work allocation through the `delegate` tool. Assign specific, distinct work to every team member, including yourself, preferably covering all 36 positions with clear ownership and additional review/integration as useful. Others cannot start until this is done.
 Maintain a clear view of who has finished which assignments. Request progress updates and make sure each agent communicates its findings, completion, or blockers. Resolve missing answers and conflicting recommendations before submission. **Deciding when to submit is your responsibility**: assess the readiness of all assigned work, remaining time/budget, and whether further review is worthwhile. Do not submit stage one merely because some early answers exist; normally wait for completion reports from every assigned agent. Under severe budget pressure, decide what can be integrated and communicate that decision.
+Plan the team's first-stage work around the initial **$0.80 shared budget**. **Your official Stage 1 submission unlocks an additional $1.20**, giving the team a **$2.00 cumulative budget** for the full evaluation. Unused Stage 1 funds carry over. Do not wait for the additional funds to arrive before submitting: you are responsible for deciding when the team has enough answers to use its initial submission.
 Only you may call `score_dev` for either stage. Your submission interrupts and restarts teammates' ongoing work while retaining their recorded context. After stage one, announce revised priorities, organize error identification, gather teammates' assessments, and decide when to make the final submission. Manage integration and keep the board informed.
 """
 
