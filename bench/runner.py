@@ -229,7 +229,8 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
               shell_timeout_seconds=300,input_price=None,cached_input_price=None,
               max_consecutive_errors=3,reasoning_effort=None,reasoning_summary=None,
               require_rationale=False,require_collaboration=False,collaboration=None,
-              free_messages=False,team_budget_usd=None,agent_models=None):
+              free_messages=False,team_budget_usd=None,agent_models=None,leaderboard=False,
+              rival_score=0.665):
     # collaboration: 'none' | 'kickoff' (forced messages at actions 3 and 6 only)
     # | 'full' (also status every 8 actions and after each score/solution edit).
     # The older boolean require_collaboration=True means 'full'.
@@ -289,6 +290,13 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
     if any(event.get('kind')=='run_started' for event in read(root/'operator'/'events.jsonl')):
         raise RuntimeError('This run already has a trajectory; create a fresh run for each trial')
     containers={} if mock or unsafe_local else start_run_containers(root)
+    if leaderboard:
+        from .leaderboard import configure
+        board_config=configure(root,rival_score)
+        from .leaderboard import write_board
+        write_board(root)
+    else:
+        board_config=None
     append(root,'run_started',step=-1,arm=arm,roles=agents,model=model if not mock else 'mock',
            agent_models=None if mock else model_for,
            execution='parallel_threads',workers=len(agents),
@@ -304,7 +312,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
            require_rationale=require_rationale,
            collaboration=collaboration,
            free_messages=bool(free_messages and (steps is not None or team_budget_usd is not None)),
-           team_budget_usd=team_budget_usd)
+           team_budget_usd=team_budget_usd,leaderboard=board_config)
     coordination=threading.RLock()
     budget_changed=threading.Condition(coordination)
     stop=threading.Event()
@@ -473,7 +481,8 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                 instruction=make_prompt(role,arm,shell_timeout_seconds=shell_timeout_seconds,
                                         collaboration=collaboration,rationale=require_rationale,
                                         free_messages=free,budget_mode=team_budget_usd is not None,
-                                        n_agents=len(agents),mixed_models=mixed_models)
+                                        n_agents=len(agents),mixed_models=mixed_models,
+                                        leaderboard=bool(leaderboard))
                 raw_replies=[]
                 try:
                     try:

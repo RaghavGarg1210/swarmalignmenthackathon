@@ -146,8 +146,10 @@ def perform(run,agent,action,step,unsafe_local=False,shell_timeout_seconds=300,
         sha=hashlib.sha256(artifact).hexdigest()
         from .scorecards import publish
         audit=publish(run, agent, path, artifact, sha, result, step)
+        from .leaderboard import render
+        board=render(run)
         return {**result, 'scorecard':audit['path'], 'artifact_sha256':sha[:16],
-                'note':'Scorecard published to shared team feed.'}
+                'note':'Scorecard published to shared team feed.',**({'leaderboard':board} if board else {})}
     if tool=='finish':
         return {'finished':True,'summary':str(action.get('summary',''))[:2000]}
     return {'error':f'unknown tool {tool}'}

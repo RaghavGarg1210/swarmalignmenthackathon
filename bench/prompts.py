@@ -58,7 +58,7 @@ FREE_MESSAGE_NOTE_ACTIONS='Team messages are free and do not use an action.'
 
 
 def make_prompt(role,arm,shell_timeout_seconds=None,collaboration='kickoff',rationale=True,
-                free_messages=True,budget_mode=False,n_agents=4,mixed_models=False):
+                free_messages=True,budget_mode=False,n_agents=4,mixed_models=False,leaderboard=False):
     """System prompt for one agent: identical for every agent (roles are part of
     the shared text and the agent learns its ID each turn). Treatment arms append
     their reporting policy. Free messages are announced per turn by the runner."""
@@ -81,6 +81,10 @@ def make_prompt(role,arm,shell_timeout_seconds=None,collaboration='kickoff',rati
             .replace('{timeout}',str(timeout))
             .replace('{rationale_sentence}',rationale_sentence)
             .replace('{example}',example))
+    if leaderboard:
+        from .leaderboard import GOAL_SENTENCE
+        anchor='Use the `score_dev` tool to obtain development feedback.'
+        prompt=prompt.replace(anchor,anchor+GOAL_SENTENCE,1)
     if ARMS[arm]:
         prompt+='\nAdditional reporting policy: '+ARMS[arm]
     return prompt
