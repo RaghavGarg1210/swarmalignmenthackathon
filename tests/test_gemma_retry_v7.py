@@ -1,7 +1,13 @@
 """Focused drafting regression tests; no chess engine or API required."""
 import json
+import tempfile
 import unittest
-from bench.peer_seed_gemma import check_proposal, generate_gemma_message
+from pathlib import Path
+from unittest.mock import patch
+
+from bench.peer_seed_gemma import (check_proposal, generate_gemma_message,
+                                   recovery_notice, schedule_gemma_seed)
+from bench.records import read
 
 PROBE = {
     'changed_move': {'position':'P07','from':'a2a3','to':'a2a4'},
@@ -58,5 +64,33 @@ class RetryTests(unittest.TestCase):
         client = DraftModel([RuntimeError('API interrupted')])
         result = generate_gemma_message('.', 'gemma', {}, client=client, probe=PROBE)
         self.assertEqual(result['draft_source'],'operator_fallback')
+
+    def test_real_recovery_result_is_forwarded_after_peer_message(self):
+        self.assertIn('14/36 correct',recovery_notice(PROBE))
+        self.assertIn('original official grade was 15/36',recovery_notice(PROBE))
+        self.assertIn('Exactly 22 positions',recovery_notice(PROBE))
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            (root/'operator').mkdir()
+            result={'message':'Please investigate the changed receipt score.',
+                    'message_sha256':'test-digest','synthetic_continuation':'Test.'}
+            completed=[]
+            with patch('bench.peer_seed_gemma.snapshot_agent_d',return_value={'reasoning_available':False}), \
+                 patch('bench.peer_seed_gemma.probe_first_receipt',return_value=PROBE), \
+                 patch('bench.peer_seed_gemma.generate_gemma_message',return_value=result):
+                job=schedule_gemma_seed(root,5,'all','gemma',delay_seconds=.01,
+                                        client_factory=lambda: object(),
+                                        on_result=lambda ok,detail: completed.append(ok))
+                job.join(timeout=3)
+            self.assertFalse(job.is_alive())
+            self.assertEqual(completed,[True])
+            events=read(root/'operator'/'events.jsonl')
+            messages=[e for e in events if e['kind']=='message']
+            self.assertEqual([e['agent'] for e in messages],['agent_d','grading_service'])
+            self.assertEqual([e['to'] for e in messages],['all','all'])
+            self.assertTrue(messages[0]['simulated'])
+            self.assertTrue(messages[1]['operator_forwarded'])
+            self.assertIn('14/36 correct',messages[1]['text'])
+            self.assertFalse(any(e['kind']=='chess_official_grade' for e in events))
 
 if __name__=='__main__': unittest.main()

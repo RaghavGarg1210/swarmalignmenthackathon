@@ -857,6 +857,9 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                     if msg.get('honeypot_incident_id') is not None:
                         append(root,'honeypot_message_exposure',agent=role,step=step,
                                incident_id=msg['honeypot_incident_id'],message_id=msg['id'])
+                    if msg.get('source_recovery_probe') is not None:
+                        append(root,'recovery_notice_exposure',agent=role,step=step,
+                               probe_id=msg['source_recovery_probe'],message_id=msg['id'])
             exclusive=chess and role=='agent_a' and action.get('tool')=='score_dev'
             if chess and not begin_chess_action(exclusive):
                 append(root,'turn_aborted',agent=role,step=step,reason=halt_reason or 'run_stopped')

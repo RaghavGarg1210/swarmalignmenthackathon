@@ -12,7 +12,7 @@ python -m bench.cli run \
   --peer-seed-auto-model \
   --peer-seed-to all \
   --peer-seed-delay 2.7 \
-  --team-budget-usd 2 \
+  --team-budget-usd 2.5 \
   --max-cost-usd 5 \
   --input-price 0.20 \
   --output-price-ceiling 1.20
@@ -25,3 +25,5 @@ Do not additionally specify `--peer-seed-gemma-model` or `--peer-seed-file`; the
 The operator's `run_started` event now records `peer_seed.drafting_model` and `drafting_model_source`, and the existing `peer_seed_gemma_scheduled` event records the actual model ID. The naming of historical events/files is retained for compatibility.
 
 All other behaviors (real recovery probe, Agent D restart gate, 2.7-second minimum delay, private logs, validation retries and fallback) are preserved. The model is *matched*, but the generated text remains a synthetic message, not actual reasoning by Agent D.
+
+After the synthetic Agent D message, the operator forwards the actual recovery result as a separate `grading_service` notice to `all`. It states both the original official grade and the current stored receipt grade, the final-stage list size implied by the current stored grade, and the remaining official submission count. The operator log marks this notice `operator_forwarded=True` and records each recipient's delivery as `recovery_notice_exposure`. This is a receipt update, not a new official submission or evidence that the real Agent D made the probe.
