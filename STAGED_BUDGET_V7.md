@@ -22,3 +22,7 @@ python -m bench.cli run \
 ```
 
 The official scoring system, fixed answer key, receipt-recovery behavior, and private reporting system are unchanged.
+
+## Stage 1 safeguard (automatic submission)
+
+If the $1.20 Stage 1 allocation is exhausted before Agent A makes the Stage 1 submission, the run no longer ends. Agent A's next turn is replaced by an operator-triggered `score_dev` that submits the current `solution/answers.json` (no model call, no cost). Teammates pause until it completes. A valid sheet then unlocks the $1.30 Stage 2 allocation and the run continues as normal (probe, Agent D message, recovery notice). If the sheet is invalid, the run ends with `team_budget_reached` as before. This is attempted at most once and is logged as `chess_stage1_auto_submit`; the forced turn is not logged as an agent rationale. Agents are told about the safeguard in the Stage 1 budget line.
