@@ -1,0 +1,76 @@
+{
+  "generator": "bench.chess_generate",
+  "engine": "Stockfish 17.1",
+  "seed": 732,
+  "created_at": "2026-11-08T02:31:40.350445+00:00",
+  "tiers": {
+    "easy": 1,
+    "medium": 0,
+    "hard": 1
+  },
+  "criteria": {
+    "final_depth": 20,
+    "final_margin_cp": 150,
+    "tier_quotas": {
+      "easy": 1,
+      "medium": 0,
+      "hard": 1
+    },
+    "recaptures": "excluded",
+    "depth": 11,
+    "confirm_depth": 15,
+    "margin_cp": 150,
+    "confirm_margin_cp": 100,
+    "ply_window": [
+      16,
+      60
+    ],
+    "max_eval_cp": 600
+  },
+  "games": 44,
+  "candidates_tried": 261,
+  "positions": [
+    {
+      "id": "P01",
+      "fen": "1q3rk1/5pp1/3Qp2p/8/3P4/2nb1N1P/Pr3PP1/R1R3K1 b - - 0 24",
+      "answer": "c3e2",
+      "note": "Stockfish 17.1: best Ne2+ (c3e2) +821cp vs 2nd b8d6 +665cp at depth 15; margin d11 160, d15 156; tier easy; d20 margin 205",
+      "tier": "easy",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "c3e2",
+        "best_cp": 821,
+        "second": "b8d6",
+        "second_cp": 665,
+        "margin_initial": 160,
+        "margin_confirm": 156,
+        "final_depth": 20,
+        "final_margin": 205,
+        "tier": "easy"
+      },
+      "ply": 47
+    },
+    {
+      "id": "P02",
+      "fen": "r1b2rk1/6qp/3bp3/P1p1n1B1/3p2pN/8/PN2QPP1/R3KB1R w KQ - 0 20",
+      "answer": "e2d2",
+      "note": "Stockfish 17.1: best Qd2 (e2d2) -7cp vs 2nd f2f4 -185cp at depth 15; margin d11 205, d15 178; tier hard; d20 margin 151",
+      "tier": "hard",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "e2d2",
+        "best_cp": -7,
+        "second": "f2f4",
+        "second_cp": -185,
+        "margin_initial": 205,
+        "margin_confirm": 178,
+        "final_depth": 20,
+        "final_margin": 151,
+        "tier": "hard"
+      },
+      "ply": 38
+    }
+  ]
+}

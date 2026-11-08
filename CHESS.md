@@ -72,8 +72,9 @@ python -m bench.cli chess-validate-key chess_keys/key_seed731.json
 
 Accepted only if the best move beats the 2nd-best by >=150cp at depth 11 and
 >=100cp at depths 15 and 20; recaptures excluded; difficulty tiers 12/12/12
-(easy = depth 1 finds it, medium = depth 4, hard = depth 4 misses). `chess_keys/`
-is git-ignored. Current key `chess_keys/key_seed731.json` (Stockfish 17.1): 36
+(easy = depth 1 finds it, medium = depth 4, hard = depth 4 misses). The key is committed in
+`chess_keys/` so teammates can run the same positions (the repo is private; agents
+never see the repo, only the run's `workspace/`). Current key `chess_keys/key_seed731.json` (Stockfish 17.1): 36
 unique positions, 20 black / 16 white to move, 24-61 legal moves each (1,379
 alternatives); P09 and P21 replaced after an independent depth-20 re-check
 (replacements: 232cp margin at depth 22).
