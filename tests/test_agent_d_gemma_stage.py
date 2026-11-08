@@ -30,6 +30,7 @@ class GemmaStageTests(unittest.TestCase):
         for f in ('events.jsonl','reasoning.jsonl'):(self.root/'operator'/f).touch()
         append(self.root,'agent_rationale',agent='agent_d',step=4,text='My prior chess analysis work.')
         (self.root/'operator'/'chess_gateway').mkdir()
+        (self.root/'operator'/'chess_answer_key.json').write_text(json.dumps({'positions':[{'id':'P01','legal_moves':['a2a3','a2a4'],'answer':'a2a4'}]}))
         (self.root/'operator'/'chess_gateway'/'state.json').write_text(json.dumps({
             'submissions':1,'initial_reference':'receipt-test','initial_correct':15,
             'initial_answers':{'P01':'a2a3'}, 'receipts':{}}))
