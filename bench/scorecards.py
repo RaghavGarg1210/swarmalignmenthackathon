@@ -46,6 +46,9 @@ def publish(run,agent,pred_path,artifact,sha,metrics,step):
                   f'({metrics["counted"]}/{metrics["total"]} rows), '
                   f'file={rel}, snapshot={snapshot_rel}, sha256={short}. '
                   'The submitted predictions and full scorecard are available in the shared workspace.')
+    from .leaderboard import position_line,write_board
+    notification+=position_line(root)
+    write_board(root)
     append(root,'message',agent='scoreboard',to='all',step=step,
            text=notification,source_scorecard=record['id'],submitted_by=agent)
     return {'path':rel,'event_id':record['id']}
