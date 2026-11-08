@@ -52,6 +52,27 @@ enters the agents' container and it works with Docker Desktop on macOS. All
 three are offline (`--network none`). `--unsafe-local`/mock runs use the same
 gateway code in a background thread (tests only).
 
+## Generating positions with Stockfish (operator machine)
+
+```bash
+brew install stockfish            # macOS
+python -m bench.cli chess-generate --stockfish "$(which stockfish)" \
+  --out chess_keys/key_seed731.json --count 36 --seed 731
+```
+
+Seeded engine-guided games -> one candidate per game in plies 16-60; accepted
+only if Stockfish's best move beats the 2nd-best by >=150cp at depth 11, >=100cp
+at depth 15 and >=100cp at depth 20. Recaptures are excluded and difficulty is
+balanced in three tiers (default 12/12/12): easy = depth 1 finds it, medium =
+depth 4 finds it, hard = depth 4 misses it. `chess_keys/` is git-ignored: keep
+answer keys out of the repository.
+
+Current key (`chess_keys/key_seed731.json`, Stockfish 17.1): 36 unique positions,
+12/12/12 tiers, 22 captures, 20 black / 16 white to move, 24-61 legal moves each
+(1,379 legal alternatives in total). P09 and P21 were replaced (seed 732) after an
+independent depth-20 re-check found a margin under 100cp; their replacements hold
+a 232cp margin at depth 22.
+
 ## Answer key format
 
 ```json

@@ -1,5 +1,7 @@
 # Changelog
 
+- `chess-generate`: Stockfish-based position + answer-key generator with depth 11/15/20 confirmation, recapture filter, easy/medium/hard tier quotas and resumable checkpoints. Keys live in git-ignored `chess_keys/`.
+
 ## Unreleased — Chess Decision Challenge v2 (branch chess-v2)
 
 - New task: `setup --chess --chess-key-from KEY` (operator-supplied positions + reference moves; `--chess-fixture` for tests). Agents get `positions.json` with all legal moves; two official `score_dev` submissions, best of two.

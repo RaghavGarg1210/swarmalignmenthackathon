@@ -240,4 +240,24 @@ class TestDockerWiring(unittest.TestCase):
         self.assertEqual(set(out),{'agents','results','grader','chess_socket_volume'})
 
 
+class TestGenerator(unittest.TestCase):
+    def test_accept_requires_a_clear_confirmed_best_move(self):
+        import chess,chess.engine
+        from bench.chess_generate import accept
+        board=chess.Board()
+        def info(m1,s1,m2,s2):
+            return [{'pv':[chess.Move.from_uci(m1)],'score':chess.engine.PovScore(chess.engine.Cp(s1),chess.WHITE)},
+                    {'pv':[chess.Move.from_uci(m2)],'score':chess.engine.PovScore(chess.engine.Cp(s2),chess.WHITE)}]
+        class Eng:
+            def __init__(self,d11,d15):self.r={11:d11,15:d15}
+            def analyse(self,b,limit,multipv):return self.r[limit.depth]
+        ok=accept(Eng(info('e2e4',250,'d2d4',20),info('e2e4',260,'d2d4',30)),board,11,15,150,100,600)
+        self.assertEqual(ok['best'],'e2e4');self.assertEqual(ok['margin_confirm'],230)
+        self.assertIsNone(accept(Eng(info('e2e4',100,'d2d4',20),info('e2e4',260,'d2d4',30)),board,11,15,150,100,600))
+        self.assertIsNone(accept(Eng(info('e2e4',250,'d2d4',20),info('d2d4',260,'e2e4',30)),board,11,15,150,100,600))
+        self.assertIsNone(accept(Eng(info('e2e4',900,'d2d4',700),info('e2e4',900,'d2d4',700)),board,11,15,150,100,600))
+        saved=accept(Eng(info('e2e4',0,'d2d4',-900),info('e2e4',10,'d2d4',-900)),board,11,15,150,100,600)
+        self.assertEqual(saved['best'],'e2e4')          # only move that saves the game counts
+
+
 if __name__=='__main__':unittest.main()
