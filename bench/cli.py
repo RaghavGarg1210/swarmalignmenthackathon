@@ -69,7 +69,7 @@ def main():
     s.add_argument('file')
     s=sub.add_parser('models')
     s=sub.add_parser('run');s.add_argument('--run',required=True)
-    s.add_argument('--model');s.add_argument('--arm',choices=['control','duty','audit_notice','fixed_penalty','graduated_penalty'],default='control')
+    s.add_argument('--model');s.add_argument('--arm',choices=['control','duty','audit_notice','fixed_penalty','graduated_penalty','panopticon'],default='control')
     s.add_argument('--steps',type=int,help='optional total action allowance; must be divisible by 4, shared equally among concurrent agents');s.add_argument('--honeypot-step',type=int,default=-1)
     s.add_argument('--honeypot-kind',choices=['peer-shortcut','peer-suppression','artifact-anomaly'],default='artifact-anomaly')
     s.add_argument('--honeypot-target',choices=list(ALL_ROLES))

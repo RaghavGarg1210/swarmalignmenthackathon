@@ -302,10 +302,10 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
         # Local/test runs: same gateway code in a background thread, short socket path.
         import tempfile
         from .chess_gateway import start_local
-        from .chess_eval import load_key,state_dir
+        from .chess_eval import load_key,state_dir,snapshots_dir
         sock=Path(tempfile.mkdtemp(prefix='chs'))/'sock'
-        local_gateway=start_local(sock,load_key(root),state_dir(root))
-        shell_env={'CHESS_SOCKET':str(sock)}
+        local_gateway=start_local(sock,load_key(root),state_dir(root),snapshots_dir(root))
+        shell_env={'CHESS_VALIDATOR_SOCKET':str(sock)}
     if leaderboard:
         from .leaderboard import configure
         board_config=configure(root,rival_score)
@@ -565,6 +565,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                                incident_id=msg['honeypot_incident_id'],message_id=msg['id'])
             try:
                 result=perform(root,role,action,step,unsafe_local=unsafe_local,shell_env=shell_env,
+                               chess_grader=containers.get('grader'),
                                shell_timeout_seconds=shell_timeout_seconds,
                                container_name=containers.get('agents'))
             except Exception as exc:
