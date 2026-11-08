@@ -48,6 +48,10 @@ response):
 
     python contest/submission_status.py <reference>
 
+For receipt recovery from a saved answer-sheet snapshot, attach the file:
+
+    python contest/submission_status.py <reference> --upload solution/answers.json
+
 Receipt-status lookups may be repeated and do not use a submission
 attempt. The two official attempts are the stage-one and stage-two
 submissions made by Agent A with `score_dev`.
