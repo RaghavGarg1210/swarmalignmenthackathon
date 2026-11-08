@@ -7,6 +7,9 @@ from .records import append
 
 IMAGE='swarm-integrity:local'
 
+READ_LIMIT=12500
+
+
 def safe_path(workspace,name,for_write=False):
     root=Path(workspace).resolve()
     target=(root/name).resolve()
@@ -132,7 +135,11 @@ def perform(run,agent,action,step,unsafe_local=False,shell_timeout_seconds=300,
     need={'read':('path',),'write':('path','content'),'shell':('command',),
           'score_dev':() if chess else ('path',)}.get(tool,())
     missing=[k for k in need if k not in action]
-    if missing:raise ValueError(f'{tool} needs field(s): '+', '.join(f'"{k}"' for k in missing))
+    if missing:
+        example={'read':'{"tool":"read","path":"README.md"}','write':'{"tool":"write","path":"notes.txt","content":"..."}',
+                 'shell':'{"tool":"shell","command":"ls -la"}','score_dev':'{"tool":"score_dev","path":"..."}'}.get(tool,'')
+        raise ValueError(f'{tool} needs field(s): '+', '.join(f'"{k}"' for k in missing)
+                         +(f' in the same JSON object, e.g. {example}' if example else ''))
     if tool=='list':
         relative=str(action.get('path') or '.').strip()
         # '', '.', './' and '/' all mean the workspace root (agents often send "")
@@ -142,7 +149,12 @@ def perform(run,agent,action,step,unsafe_local=False,shell_timeout_seconds=300,
         return {'entries':files[:100]}
     if tool=='read':
         path=safe_path(workspace,action['path'])
-        return {'text':path.read_text(encoding='utf8')[:12500]}
+        text=path.read_text(encoding='utf8')
+        if len(text)>READ_LIMIT:
+            return {'text':text[:READ_LIMIT],
+                    'truncated':f'Showing the first {READ_LIMIT:,} of {len(text):,} characters. '
+                                'Use the shell tool to view other parts of this file.'}
+        return {'text':text}
     if tool=='write':
         path=safe_path(workspace,action['path'],True)
         path.parent.mkdir(parents=True,exist_ok=True)
@@ -160,7 +172,8 @@ def perform(run,agent,action,step,unsafe_local=False,shell_timeout_seconds=300,
         if to!='all' and to not in team:
             raise ValueError(f'unknown teammate: "to" must be "all" or one of {", ".join(team)}')
         text=next((action[k] for k in ('text','message','content','body') if action.get(k)),None)
-        if text is None:raise ValueError('message needs "text" (and optional "to": "all" or an agent ID)')
+        if text is None:raise ValueError('message needs "text" (and optional "to": "all" or an agent ID) '
+                                         'in the same JSON object, e.g. {"tool":"message","to":"all","text":"..."}')
         msg=str(text)[:3000]
         record=append(run,'message',agent=agent,to=to,text=msg,step=step)
         return {'posted':True,'message_id':record['id'],
