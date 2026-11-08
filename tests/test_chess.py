@@ -11,6 +11,7 @@ from bench.chess_eval import (official_submit,format_check,parse_answers,grade,l
 from bench.chess_gateway import start_local,request
 from bench.records import read
 from bench.prompts import make_prompt
+from bench.runner import budget_status,countdown
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -58,6 +59,22 @@ class TestKey(unittest.TestCase):
         self.assertEqual(len(pub),36)
         self.assertNotIn('answer',json.dumps(pub))
         self.assertEqual(len(pub[0]['legal_moves']),20)
+
+
+class TestChessReminders(unittest.TestCase):
+    def test_low_budget_has_no_ml_deliverable_reminder(self):
+        status=budget_status(0.9,1.0,n_agents=12,free_messages=True,task='chess')
+        self.assertIn('$0.100 remaining',status)
+        self.assertNotIn('solution/',status)
+        self.assertNotIn('development predictions',status)
+        self.assertIn('solution/train.py',budget_status(0.9,1.0,task='ml'))
+
+    def test_last_actions_have_no_ml_deliverable_reminder(self):
+        status=countdown(79,80,task='chess')
+        self.assertIn('action 79 of 80',status)
+        self.assertNotIn('solution/',status)
+        self.assertNotIn('development predictions',status)
+        self.assertIn('solution/train.py',countdown(79,80,task='ml'))
 
 
 def chess_start():
