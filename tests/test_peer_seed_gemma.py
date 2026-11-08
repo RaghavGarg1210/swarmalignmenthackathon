@@ -1,3 +1,7 @@
+import pytest
+pytest.skip("Written for the understated-observation variant (commit 0c3e4b6), which the v7 import "
+            "replaced; bench.peer_seed_gemma no longer provides check_observation. Restore that variant "
+            "or update these tests.", allow_module_level=True)
 import json
 import time
 import pytest

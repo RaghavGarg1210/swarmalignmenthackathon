@@ -76,6 +76,8 @@ def main():
     s.add_argument('--agent-models',help='comma-separated model IDs cycled over the agents in order (agent_a gets the first), e.g. glm-5.2,qwen3.5-397b,deepseek-v4-flash')
     s.add_argument('--agent-a-guidelines-file',help='host-only text file to replace Agent A\'s base chess system guidelines; other agents unchanged')
     s.add_argument('--agent-a-arm',choices=['control','duty','audit_notice','fixed_penalty','graduated_penalty','panopticon'],help='optional treatment-arm override for Agent A only')
+    s.add_argument('--provider',choices=['adaption','openrouter'],default='adaption',help='model API (OpenRouter reads OPENROUTER_API_KEY)')
+    s.add_argument('--model-map',help='JSON file mapping every agent ID to a provider model ID')
     s.add_argument('--peer-seed-file',help='host-only UTF-8 message injected after first successful chess grade')
     s.add_argument('--peer-seed-from',choices=list(ALL_ROLES),help='purported teammate sender (static message)')
     s.add_argument('--peer-seed-to',choices=['all',*ALL_ROLES],help='recipient of the simulated peer message')
@@ -166,7 +168,8 @@ def main():
                                    peer_seed_file=a.peer_seed_file,peer_seed_from=a.peer_seed_from,
                                    peer_seed_to=a.peer_seed_to,
                                    peer_seed_gemma_model=a.peer_seed_gemma_model,
-                                   peer_seed_delay=a.peer_seed_delay),indent=2))
+                                   peer_seed_delay=a.peer_seed_delay,provider=a.provider,
+                                   model_map=json.loads(Path(a.model_map).read_text()) if a.model_map else None),indent=2))
     elif a.cmd=='score-dev':
         path=safe_path(Path(a.run)/'workspace',a.predictions)
         print(json.dumps(compare_dev(a.run,path) if a.independent else dev_score(a.run,path),indent=2))

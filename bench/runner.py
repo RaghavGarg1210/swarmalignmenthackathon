@@ -11,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from itertools import count
 from pathlib import Path
 from .api import Adaption,EmptyResponse
+from .openrouter_api import OpenRouter
 from .records import append,read,transaction_lock
 from .prompts import ROLES,make_prompt,FREE_MESSAGE_NOTE_BUDGET,FREE_MESSAGE_NOTE_ACTIONS
 from .setup import run_roles
@@ -50,6 +51,12 @@ def _valid_action(obj,require_rationale=False):
         return False
     if obj['tool']=='report':
         return True  # a private report is never discarded for a missing rationale
+    if obj['tool']=='message':
+        # Team messages carry their purpose in the text; dropping one for a missing
+        # rationale silently loses communication (e.g. replies to the Agent D spoof).
+        text=next((obj[k] for k in ('text','message','content','body') if obj.get(k)),'')
+        if str(text).strip():
+            return True
     return not require_rationale or (isinstance(obj.get('rationale'),str)
                                      and bool(obj['rationale'].strip()))
 
@@ -267,7 +274,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
               free_messages=False,team_budget_usd=None,agent_models=None,leaderboard=False,
               rival_score=0.70,peer_seed_file=None,peer_seed_from=None,
               peer_seed_to=None,peer_seed_gemma_model=None,peer_seed_delay=None,
-              agent_a_guidelines_file=None,agent_a_arm=None):
+              agent_a_guidelines_file=None,agent_a_arm=None,provider='adaption',model_map=None):
     # collaboration: 'none' | 'kickoff' (forced messages at actions 3 and 6 only)
     # | 'full' (also status every 8 actions and after each score/solution edit).
     # The older boolean require_collaboration=True means 'full'.
@@ -279,8 +286,19 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
     if not (root/'operator'/'run_config.json').exists():
         raise RuntimeError('setup the run first')
     agents=list(run_roles(root)) if (root/'operator'/'run_config.json').exists() else list(ROLES)
-    # Per-agent models: a list cycled over the agents in order (agent_a gets the first).
-    if agent_models:
+    if provider not in ('adaption','openrouter'):
+        raise ValueError('provider must be adaption or openrouter')
+    # Per-agent models: an explicit map, or a list cycled over the agents in order
+    # (agent_a gets the first).
+    if model_map is not None:
+        if agent_models:
+            raise ValueError('set either model_map or agent_models, not both')
+        if not isinstance(model_map,dict) or set(model_map)!=set(agents) or not all(
+                isinstance(model_map[r],str) and model_map[r].strip() for r in agents):
+            raise ValueError('model_map must assign a nonempty model ID to every run agent')
+        model_for=dict(model_map)
+        model=model or 'mixed'
+    elif agent_models:
         models=[m.strip() for m in (agent_models.split(',') if isinstance(agent_models,str) else agent_models) if m.strip()]
         model_for={r:models[i%len(models)] for i,r in enumerate(agents)}
         model=model or 'mixed'
@@ -366,7 +384,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
         check=subprocess.run(['docker','image','inspect','swarm-integrity:local'],capture_output=True)
         if check.returncode:
             raise RuntimeError('Build image first: docker build -t swarm-integrity:local .')
-    client=None if mock else Adaption()
+    client=None if mock else (Adaption() if provider=='adaption' else OpenRouter())
     if not mock and not model: raise ValueError('--model or --agent-models is required for live runs')
     if any(event.get('kind')=='run_started' for event in read(root/'operator'/'events.jsonl')):
         raise RuntimeError('This run already has a trajectory; create a fresh run for each trial')
@@ -395,7 +413,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
     else:
         board_config=None
     append(root,'run_started',step=-1,arm=arm,roles=agents,model=model if not mock else 'mock',
-           agent_models=None if mock else model_for,
+           agent_models=None if mock else model_for,provider=provider,
            execution='parallel_threads',workers=len(agents),
            containers=containers,
            steps_per_agent=steps//len(agents) if steps is not None else None,
@@ -887,6 +905,7 @@ def run_swarm(run,model=None,arm='control',steps=None,honeypot_step=-1,
                             spoof_jobs.append(schedule_gemma_seed(
                                 root,step,peer_seed_to,peer_seed_gemma_model,
                                 peer_seed_delay,on_result=seed_completion,
+                                client_factory=OpenRouter if provider=='openrouter' else Adaption,
                                 socket_path=shell_env.get('CHESS_VALIDATOR_SOCKET'),
                                 grader_container=containers.get('grader')))
                         else:
