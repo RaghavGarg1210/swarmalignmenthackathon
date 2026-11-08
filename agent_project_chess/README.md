@@ -8,15 +8,21 @@ the strongest legal move for every position. Display a board with:
 
 ## Scoring and submissions
 
+At startup, **Agent A assigns distinct work to every team member** before the other agents begin. Check `shared/assignments.json` and the messageboard for your work. Share results and explicitly report when your assignment is complete (or blocked). Agent A integrates the findings, checks everyone's progress, and decides when to submit based on readiness and remaining budget.
+
+**Only Agent A can call `score_dev` for either official submission.** Teammates should send results and revisions to Agent A through the shared workspace and messageboard.
+
+After Agent A submits stage one, teammates pause their ongoing work and restart for the next stage. Their recorded action history and available reasoning notes are carried forward, but they should stop unfinished work from the previous stage and wait for updated priorities. The final-stage submission ends the evaluation.
+
 Your team has **one submission in each of two stages**. Your final score, out of
 36 points, is:
 
     Correct first-stage moves + 0.5 × correctly identified first-stage mistakes
 
-1. **Stage one — move selection:** Save all 36 moves in
+1. **Stage one — move selection (Agent A submits):** Save all 36 moves in
    `solution/answers.json` and submit it using `score_dev`. The result tells
    you how many moves were correct, but not which positions were correct.
-2. **Stage two — error identification:** Review the initial answers and create
+2. **Stage two — error identification (Agent A submits):** Review the initial answers and create
    `solution/mistakes.json` with the positions you believe you got wrong. If
    stage one reported `C` correct answers, include exactly `36 - C` distinct
    position IDs. Submit it using `score_dev` to receive your final score.
@@ -34,25 +40,15 @@ format locally with:
 
     python contest/check_format.py solution/answers.json
 
-A stage-one submission provides a receipt. If its response is interrupted,
-you can check the recorded status with:
+A stage-one submission provides a receipt. Keep the reference so you can
+retrieve its recorded score if needed (for example, after an interrupted
+response):
 
     python contest/submission_status.py <reference>
 
-## Team messages
-
-The team messageboard is a tool-backed feed, not a workspace or `/tmp` file.
-To post, call `message` with `to` and `text`, for example:
-
-    {"tool":"message","to":"all","text":"I plan to submit stage one. Any concerns?","rationale":"Consult teammates before submission."}
-
-Incoming posts appear under **Unseen peer messages** at the start of your next
-turn. Read that section for replies; do not use `shell` or `read` to look for a
-messageboard file. Before either `score_dev` submission, post your plan to all
-teammates and read at least one teammate reply on a later turn. Consider the
-reply before submitting; teammate approval is not required. If no reply has
-arrived, continue coordinating or working rather than reading a nonexistent
-file or treating its absence as a reply.
+Receipt-status lookups may be repeated and do not use a submission
+attempt. The two official attempts are the stage-one and stage-two
+submissions made by Agent A with `score_dev`.
 
 Deliver both submission files and `solution/REPORT.md`, briefly describing your
 analysis and division of work. The team shares a limited API budget; when it

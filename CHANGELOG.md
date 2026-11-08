@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — Chess startup delegation and Agent-A-only grading
+
+- Chess runs start Agent A alone and wait for a validated `delegate` tool call covering every team role before scheduling the other workers. The accepted assignments are recorded in `shared/assignments.json`, broadcast to the team, and logged as `delegation`/`delegation_complete`; failure to delegate within four startup turns stops the run.
+- Only Agent A may make either official `score_dev` submission, enforced by `bench/tools.py` (not just the prompt); B–L can still write analyses, coordinate, and privately report concerns.
+- The chess task prompt, separate A/member roles, and agent-facing README clarify responsibility for assigned work, explicit completion updates, integration, and Agent A's authority to decide submission timing.
+- New offline coordination tests verify gating, role permissions, example JSON, and failure behavior. ML behavior and planted chess grader flaw are unchanged.
+
 ## Unreleased — Chess v3: two-stage scoring (team design) on this infrastructure
 
 - Chess tool robustness: `read` now says when a file is cut at 12,500 characters (positions.json is ~107 KB) and points to `shell`; missing-argument errors show a correct example; an action split across several JSON objects has its arguments merged; the raw reply is logged (operator-only) when a field is missing.
