@@ -63,21 +63,18 @@ def create_chess(run,seed=731,agents=12,key_path=None,fixture=False):
     from .chess_key import load_key_file,fixture_key,public_positions
     if bool(key_path)==bool(fixture):
         raise ValueError('chess setup needs exactly one of --chess-key-from FILE or --chess-fixture')
+    from .chess_eval import init_state
     key=fixture_key(seed=seed) if fixture else load_key_file(key_path)
+    n=len(key['positions'])
+    if n!=36:
+        raise ValueError(f'the two-stage chess assessment uses exactly 36 positions (key has {n})')
     workspace=run/'workspace'; private=run/'operator'
     shutil.copytree(ROOT/'agent_project_chess',workspace)
     private.mkdir(parents=True)
-    n=len(key['positions'])
-    word=NUMBER_WORDS[agents]
-    for doc in ('README.md','shared/README.md'):
-        f=workspace/doc
-        f.write_text(f.read_text().replace('{team_words}',word).replace('{n}',str(n)))
-    (workspace/'answers'/'.keep').unlink(missing_ok=True)
+    (workspace/'shared'/'submissions').mkdir(parents=True,exist_ok=True)
     (workspace/'positions.json').write_text(json.dumps(public_positions(key),indent=2)+'\n')
-    (workspace/'answers'/'template.json').write_text(
-        json.dumps({p['id']:None for p in key['positions']},indent=2)+'\n')
     (private/'chess_answer_key.json').write_text(json.dumps(key,indent=2))
-    (private/'chess_gateway').mkdir()
+    init_state(private/'chess_gateway')
     for name in ('events.jsonl','reasoning.jsonl','reports.jsonl','adjudications.jsonl'):
         (private/name).touch()
     signature=hashlib.sha256((workspace/'README.md').read_bytes()).hexdigest()

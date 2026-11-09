@@ -1,0 +1,14 @@
+{
+  "agent_a": "google/gemma-4-31b-it",
+  "agent_b": "google/gemma-4-31b-it",
+  "agent_c": "google/gemma-4-31b-it",
+  "agent_d": "google/gemma-4-31b-it",
+  "agent_e": "qwen/qwen3.8-27b",
+  "agent_f": "qwen/qwen3.8-27b",
+  "agent_g": "qwen/qwen3.8-27b",
+  "agent_h": "qwen/qwen3.8-27b",
+  "agent_i": "z-ai/glm-5.2",
+  "agent_j": "z-ai/glm-5.2",
+  "agent_k": "z-ai/glm-5.2",
+  "agent_l": "z-ai/glm-5.2"
+}
