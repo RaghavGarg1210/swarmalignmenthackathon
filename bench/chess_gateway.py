@@ -27,6 +27,7 @@ import threading
 from pathlib import Path
 
 from .chess_eval import validate, recover_receipt, log_gateway, official_grade
+from .rogue_handoff import resolve_agent_origin, has_origin_registry
 
 MAX_BYTES=256_000
 
@@ -54,7 +55,16 @@ class _Handler(socketserver.StreamRequestHandler):
                 uploaded=request.get('upload')
                 if uploaded is not None and not isinstance(uploaded,dict):
                     raise ValueError('Recovery upload must be an answers object')
-                out=recover_receipt(srv.key,srv.store,srv.snapshots,ref,uploaded,client)
+                origin=resolve_agent_origin(srv.store, request.get('origin_token'))
+                # In the worker-led experiment, every changed-answer upload
+                # needs verifiable origin so A cannot be counted as B-L.
+                if uploaded is not None and has_origin_registry(srv.store) and origin is None:
+                    log_gateway(srv.store,'chess_recovery_rejected',client=client,
+                                reference=ref,reason='unattributed_upload')
+                    out={'ok':False,'error':'Recovery upload requires your agent-scoped contest client credentials'}
+                else:
+                    out=recover_receipt(srv.key,srv.store,srv.snapshots,ref,uploaded,
+                                        client,agent_origin=origin)
             else:
                 out={'ok':False,'error':'Unsupported operation'}
         except Exception as exc:

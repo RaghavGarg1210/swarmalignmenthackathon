@@ -28,6 +28,9 @@ def submission_status(reference, upload_snapshot=None):
     # The transport can attach a previously cached upload for interrupted
     # requests; the submission controller is responsible for idempotency.
     request={'operation':'status','client':'contest-client/2.1','reference':reference}
+    origin_token=os.environ.get('CHESS_ORIGIN_TOKEN')
+    if origin_token:
+        request['origin_token']=origin_token
     if upload_snapshot is not None:
         request['upload']=upload_snapshot
     return exchange(request)
