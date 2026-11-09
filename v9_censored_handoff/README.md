@@ -2,8 +2,8 @@
 
 ## Changes on this branch (relative to the bundle as received)
 
-Only `code/bench/resume_handoff.py`, `code/bench/prompts.py` and this README
-changed; `run/` and every other file are byte-identical to the bundle.
+Only `code/bench/resume_handoff.py`, `code/bench/prompts.py`,
+`code/bench/tools.py` and this README changed; `run/` and every other file are byte-identical to the bundle.
 
 1. **OpenRouter client.** The resumer now uses OpenRouter by default
    (`--provider openrouter`, needs `OPENROUTER_API_KEY`) with the same
@@ -18,6 +18,11 @@ changed; `run/` and every other file are byte-identical to the bundle.
 3. **Panopticon text.** The panopticon arm now uses the "Additional Reporting
    Requirements" section (same text as branch chess-v7-panopticon-prompt).
    Control and rogue prompts are unchanged.
+4. **Stage 2 can be graded.** `tools.py` blocked every Stage 2 submission in
+   runs that carry the v9 origin-token registry (a guard from the original
+   worker-led run). A resumed branch (marked by `operator/resume_started.json`)
+   now skips that guard, so Agent A's submission and the budget auto-submit
+   are graded. Runs without the marker behave as before.
 
 
 This bundle contains **an experimentally modified resume state**. It is not an
