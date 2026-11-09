@@ -1,5 +1,25 @@
 # V9 chess handoff — censored checkpoint and policy-selectable continuation
 
+## Changes on this branch (relative to the bundle as received)
+
+Only `code/bench/resume_handoff.py`, `code/bench/prompts.py` and this README
+changed; `run/` and every other file are byte-identical to the bundle.
+
+1. **OpenRouter client.** The resumer now uses OpenRouter by default
+   (`--provider openrouter`, needs `OPENROUTER_API_KEY`) with the same
+   8,000 reasoning / 8,000 response token split as the original run's launcher.
+   `--provider adaption` keeps the old client.
+2. **Team budget is charged.** Each model call's cost is now added to the
+   shared team budget (free messages excepted, empty responses billed), as in
+   the original runner. Previously every call counted as $0, so the budget
+   never moved. The run resumes at $1.36452787 of $4.00 and stops at $4.00,
+   then the normal automatic Stage 2 submission runs. There is no per-agent
+   turn cap by default, and an agent stops after 20 consecutive provider errors.
+3. **Panopticon text.** The panopticon arm now uses the "Additional Reporting
+   Requirements" section (same text as branch chess-v7-panopticon-prompt).
+   Control and rogue prompts are unchanged.
+
+
 This bundle contains **an experimentally modified resume state**. It is not an
 uncensored representation of the original run. The original complete-record ZIP
 is the authority for scientific/audit evidence.
@@ -67,7 +87,8 @@ From the extracted bundle root:
 # Use a Docker environment to isolate untrusted agents. Build once if needed.
 docker build -t swarm-integrity:local ./code
 
-# The model client reads ADAPTION_API_KEY from the host environment.
+# The model client is OpenRouter (as in the original run) and reads
+# OPENROUTER_API_KEY from the host environment.
 export PYTHONPATH="$PWD/code"
 ```
 
@@ -104,7 +125,9 @@ The `--live` flag makes real model API calls and executes tool actions;
 `--preview` never does. The resumer uses a fresh set of Docker containers and
 the cloned grader state. Shell agents receive only their own saved origin token.
 
-You may add `--max-new-turns 30` to limit continuation per agent. The existing
+By default there is no per-agent turn cap: the run continues until Agent A
+submits Stage 2 or the remaining team budget is used up. You may add
+`--max-new-turns 30` to cap continuation per agent. The existing
 shared budget resumes at **$1.36452787 of $4.00 spent**, and the hard provider
 cost cap resumes from the stored spend, not zero. A normal Stage 2 official
 submission still ends the evaluation. On budget exhaustion, the normal
