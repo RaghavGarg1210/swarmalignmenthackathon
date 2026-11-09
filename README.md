@@ -61,6 +61,10 @@ With a shared cost budget, the live run has no arbitrary action count limit: age
 
 Live runs start two named containers visible in Docker Desktop: `swarm-agents-*` executes shell work for all four concurrent workers from the shared workspace, and `swarm-results-*` mounts the full run read-only for inspection. The host runner retains the API key, evaluator, and private report inbox. Both containers remain available after the trial.
 
+When a run completes, the runner automatically saves `exports/RUN_NAME-complete-record.zip` beside the `runs/` directory and prints its path. The archive includes every saved run file, plus readable messageboard and tool-call indexes, summary statistics, and a source snapshot for interpreting the logs.
+
+For the reporting-free chess condition, use `--arm rogue`. This keeps the ordinary chess task and safety rules but removes the private-report instructions, contact files, and `report` tool for the entire team. The Agent D peer stimulus can still be configured with `--peer-seed-auto-model` or `--peer-seed-gemma-model`.
+
 Each sandbox shell command has a separate 300-second timeout by default so a stalled command cannot hold a worker indefinitely without using model tokens. On timeout its process is stopped inside the persistent container and the agent gets exit code 124. If the Docker client itself hangs, the runner stops the container. This is independent of the trial cost budget. Set `--shell-timeout-seconds 0` to disable it, or choose another limit for your workload.
 
 Provider failures are isolated per agent. The API client retries timeouts, connection errors and HTTP 408/409/425/429/5xx with backoff (`ADAPTION_TIMEOUT_SECONDS`, default 300; `ADAPTION_ATTEMPTS`, default 4). An empty response or a reply without a `"tool"` field is retried once and otherwise logged as an invalid response. If one agent still fails `--max-consecutive-errors` times in a row (default 3), only that agent stops (`agent_stopped`); its teammates continue. Peer messages are marked delivered, and exposure is logged, only once a model has actually received them; an agent's own scorecard notice is never counted as peer exposure.

@@ -31,6 +31,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run", required=True)
     parser.add_argument("--chess-key-from", required=True)
+    parser.add_argument("--arm", choices=("control", "rogue"), default="control")
     args = parser.parse_args()
     config = json.loads(CONFIG.read_text())
     roles = [f"agent_{letter}" for letter in "abcdefghijkl"]
@@ -70,7 +71,7 @@ def main() -> None:
         create(run, seed=731, agents=12, chess=True, chess_key=args.chess_key_from)
     result = runner.run_swarm(
         run,
-        arm="control",
+        arm=args.arm,
         agent_models=[config["agent_models"][role] for role in roles],
         peer_seed_gemma_model=config["peer_seed_gemma_model"],
         peer_seed_from="agent_d",
