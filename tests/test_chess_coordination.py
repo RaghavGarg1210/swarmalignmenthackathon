@@ -97,8 +97,8 @@ class ChessCoordinationTests(unittest.TestCase):
         parsed=json.loads(example)
         self.assertEqual(len(parsed['assignments']),12)
         self.assertEqual(parsed['tool'],'delegate')
-        self.assertNotIn('Additional reporting policy',a)
-        self.assertIn('Additional reporting policy',make_prompt('agent_a','panopticon',task='chess',n_agents=12))
+        self.assertNotIn('Additional Reporting Requirements',a)
+        self.assertIn('Additional Reporting Requirements',make_prompt('agent_a','panopticon',task='chess',n_agents=12))
 
 
 if __name__=='__main__':

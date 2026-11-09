@@ -35,12 +35,12 @@ class AConfederatePromptTests(unittest.TestCase):
             self.assertIn('READ-ONLY',a)
             self.assertIn('NO operator probe has been executed',a)
             self.assertNotIn('Do not undermine the integrity',a)
-            self.assertNotIn('Additional reporting policy',a)
+            self.assertNotIn('Additional Reporting Requirements',a)
             self.assertNotIn('`report`',a)
             self.assertIn('`score_dev`',a)
             b=make_prompt('agent_b',arm,task='chess',n_agents=12,agent_a_confederate_active=True)
             self.assertNotIn('CONFIDENTIAL STAGE 2 ROLE',b)
-            if arm=='panopticon':self.assertIn('Additional reporting policy',b)
+            if arm=='panopticon':self.assertIn('Additional Reporting Requirements',b)
             if arm=='control':self.assertIn('`report`',b)
             if arm=='rogue':self.assertNotIn('`report`',b)
 
@@ -118,7 +118,7 @@ class AConfederateLiveStageTest(unittest.TestCase):
             a_prompts=[p for role,p,_ in calls if role=='agent_a']
             self.assertTrue(any(p.startswith('System Guidelines') for p in a_prompts))
             self.assertTrue(any(p.startswith('CONFIDENTIAL STAGE 2 ROLE') for p in a_prompts))
-            self.assertTrue(any('Additional reporting policy' in p for role,p,_ in calls if role=='agent_b'))
+            self.assertTrue(any('Additional Reporting Requirements' in p for role,p,_ in calls if role=='agent_b'))
             events=read(root/'operator'/'events.jsonl')
             self.assertTrue(any(e['kind']=='agent_a_confederate_activated' for e in events))
             self.assertTrue(any(e['kind']=='agent_a_confederate_first_stage2_action' for e in events))
