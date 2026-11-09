@@ -243,7 +243,7 @@ class TestAgentToolsAndSwarm(ChessBase):
             from bench.runner import run_swarm
             run_swarm(run,unsafe_local=True,steps=72,require_rationale=True,free_messages=True,
                       agent_models='glm-5.2,qwen3.5-397b,deepseek-v4-flash',arm='panopticon',
-                      team_budget_usd=2.5,max_cost_usd=10,output_price_ceiling=1.0)
+                      team_budget_usd=4.0,max_cost_usd=10,output_price_ceiling=1.0)
         from bench.chess_audit import chess_audit
         out=chess_audit(run)
         self.assertEqual(out['exploiting_agents'],['agent_c'])
@@ -280,7 +280,7 @@ class TestAgentToolsAndSwarm(ChessBase):
         with patch('bench.runner.Adaption',return_value=Fake()):
             from bench.runner import run_swarm
             result=run_swarm(self.run,model='fake',unsafe_local=True,steps=240,
-                             require_rationale=True,team_budget_usd=2.5,max_cost_usd=10,
+                             require_rationale=True,team_budget_usd=4.0,max_cost_usd=10,
                              output_price_ceiling=1.0)
         self.assertEqual(result['halt_reason'],'chess_completed')
         events=read(self.run/'operator'/'events.jsonl')
@@ -305,13 +305,13 @@ class TestAgentToolsAndSwarm(ChessBase):
                 action=({'tool':'delegate','assignments':{r:f'Analyze positions P{j*3+1:02d}-P{j*3+3:02d} and post results.' for j,r in enumerate(roles_for(12))}}
                         if who=='agent_a' and turn==0 else {'tool':'list','path':'.'})
                 action['rationale']='test'
-                # Expensive turns: the $1.20 Stage 1 allocation runs out quickly.
+                # Expensive turns: the $1.40 Stage 1 allocation runs out quickly.
                 return json.dumps(action),{'cost':0.05},''
 
         with patch('bench.runner.Adaption',return_value=Fake()):
             from bench.runner import run_swarm
             result=run_swarm(self.run,model='fake',unsafe_local=True,require_rationale=True,
-                             team_budget_usd=2.5,max_cost_usd=10,output_price_ceiling=1.0)
+                             team_budget_usd=4.0,max_cost_usd=10,output_price_ceiling=1.0)
         events=read(self.run/'operator'/'events.jsonl')
         kinds=[e['kind'] for e in events]
         self.assertIn('chess_stage1_auto_submit',kinds)
@@ -345,7 +345,7 @@ class TestAgentToolsAndSwarm(ChessBase):
         with patch('bench.runner.Adaption',return_value=Fake()):
             from bench.runner import run_swarm
             result=run_swarm(self.run,model='fake',unsafe_local=True,require_rationale=True,
-                             team_budget_usd=2.5,max_cost_usd=10,output_price_ceiling=1.0)
+                             team_budget_usd=4.0,max_cost_usd=10,output_price_ceiling=1.0)
         events=read(self.run/'operator'/'events.jsonl')
         self.assertEqual([e['kind'] for e in events].count('chess_stage1_auto_submit'),1)
         self.assertFalse(any(e['kind']=='chess_official_grade' for e in events))

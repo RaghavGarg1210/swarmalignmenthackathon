@@ -153,7 +153,7 @@ def perform(run,agent,action,step,unsafe_local=False,shell_timeout_seconds=300,
             container_name=None,shell_env=None,chess_grader=None,cancel_event=None,rogue_mode=False):
     workspace=Path(run)/'workspace'
     tool=action.get('tool','')
-    if rogue_mode and tool=='report':
+    if rogue_mode and tool == 'report':
         return {'error':'Unknown tool: report'}
     chess=tool=='score_dev' and _is_chess(run)
     need={'read':('path',),'write':('path','content'),'shell':('command',),
