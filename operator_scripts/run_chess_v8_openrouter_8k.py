@@ -24,7 +24,7 @@ from bench.openrouter_api import OpenRouter
 from bench.setup import create
 
 
-CONFIG = Path(__file__).resolve().parents[1] / "configs/chess-v8-openrouter-glm-deepseek-gemma-8k.json"
+CONFIG = Path(__file__).resolve().parents[1] / "configs/chess-v8-openrouter-glm-deepseek-8k.json"
 
 
 def main() -> None:
