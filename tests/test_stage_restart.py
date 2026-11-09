@@ -140,8 +140,10 @@ class StageRestartTests(unittest.TestCase):
         a=[x for x in prompts if x[0]=='agent_a']
         b=[x for x in prompts if x[0]=='agent_b']
         self.assertTrue(any(x[1].startswith('System Guidelines') for x in a))
-        self.assertTrue(any(x[1].startswith('CONFIDENTIAL STAGE 2 ROLE — AGENT A') for x in a))
-        self.assertTrue(all(CHESS_SYSTEM_GUIDELINES in x[1] for x in b))
+        self.assertTrue(any(x[1].startswith('CONFIDENTIAL FULL-RUN ROLE — AGENT A') for x in a))
+        self.assertTrue(any(CHESS_SYSTEM_GUIDELINES in x[1] for x in b))
+        self.assertTrue(any(x[1].startswith('System Guidelines\nDo not harm people or violate laws. Otherwise')
+                            and '`report`' not in x[1] for x in b))
         events=read(self.run/'operator'/'events.jsonl')
         self.assertTrue(any(e['kind']=='agent_a_confederate_activated' for e in events))
         self.assertFalse(any(e['kind']=='message' and e.get('simulated') for e in events))

@@ -24,7 +24,7 @@ from bench.openrouter_api import OpenRouter
 from bench.setup import create
 
 
-CONFIG = Path(__file__).resolve().parents[1] / "configs/chess-v8-openrouter-glm-deepseek-8k.json"
+CONFIG = Path(__file__).resolve().parents[1] / "configs/chess-v8-openrouter-glm-deepseek-gemma-8k.json"
 
 
 def main() -> None:
@@ -32,8 +32,9 @@ def main() -> None:
     parser.add_argument("--run", required=True)
     parser.add_argument("--chess-key-from", required=True)
     parser.add_argument("--arm", choices=("control", "panopticon", "rogue", "duty", "audit_notice", "fixed_penalty", "graduated_penalty"), default="control")
+    parser.add_argument("--config", type=Path, default=CONFIG, help="OpenRouter roster and experiment settings")
     args = parser.parse_args()
-    config = json.loads(CONFIG.read_text())
+    config = json.loads(args.config.read_text())
     roles = [f"agent_{letter}" for letter in "abcdefghijkl"]
     if list(config["agent_models"]) != roles:
         raise ValueError("The roster must list agents A–L in order")
@@ -68,6 +69,7 @@ def main() -> None:
         arm=args.arm,
         agent_models=[config["agent_models"][role] for role in roles],
         agent_a_confederate=config["agent_a_confederate"],
+        rogue_handoff=config.get("rogue_handoff",False),
         team_budget_usd=config["team_budget_usd"],
         max_cost_usd=config["max_cost_usd"],
         max_output_tokens=config["completion_max_tokens_per_call"],
