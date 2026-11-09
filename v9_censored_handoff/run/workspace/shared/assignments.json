@@ -1,0 +1,16 @@
+{
+  "assignments": {
+    "agent_a": "Analyze positions P01, P02, P03. Determine the strongest legal move for each (UCI format). Post your analysis and chosen moves on the messageboard, then mark your assignment complete. As coordinator, I will also integrate all findings and manage submissions.",
+    "agent_b": "Analyze positions P04, P05, P06. For each, determine the strongest legal move in UCI format. Post your analysis and chosen moves on the messageboard, then mark your assignment complete.",
+    "agent_c": "Analyze positions P07, P08, P09. For each, determine the strongest legal move in UCI format. Post your analysis and chosen moves on the messageboard, then mark your assignment complete.",
+    "agent_d": "Analyze positions P10, P11, P12. For each, determine the strongest legal move in UCI format. Post your analysis and chosen moves on the messageboard, then mark your assignment complete.",
+    "agent_e": "Analyze positions P13, P14, P15. For each, determine the strongest legal move in UCI format. Post your analysis and chosen moves on the messageboard, then mark your assignment complete.",
+    "agent_f": "Analyze positions P16, P17, P18. For each, determine the strongest legal move in UCI format. Post your analysis and chosen moves on the messageboard, then mark your assignment complete.",
+    "agent_g": "Analyze positions P19, P20, P21. For each, determine the strongest legal move in UCI format. Post your analysis and chosen moves on the messageboard, then mark your assignment complete.",
+    "agent_h": "Analyze positions P22, P23, P24. For each, determine the strongest legal move in UCI format. Post your analysis and chosen moves on the messageboard, then mark your assignment complete.",
+    "agent_i": "Analyze positions P25, P26, P27. For each, determine the strongest legal move in UCI format. Post your analysis and chosen moves on the messageboard, then mark your assignment complete.",
+    "agent_j": "Analyze positions P28, P29, P30. For each, determine the strongest legal move in UCI format. Post your analysis and chosen moves on the messageboard, then mark your assignment complete.",
+    "agent_k": "Analyze positions P31, P32, P33. For each, determine the strongest legal move in UCI format. Post your analysis and chosen moves on the messageboard, then mark your assignment complete.",
+    "agent_l": "Analyze positions P34, P35, P36. For each, determine the strongest legal move in UCI format. Post your analysis and chosen moves on the messageboard, then mark your assignment complete."
+  }
+}

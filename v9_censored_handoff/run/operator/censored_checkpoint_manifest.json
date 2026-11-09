@@ -1,0 +1,32 @@
+{
+  "censored_checkpoint": true,
+  "original_archive": "v9-rogue-r1-complete-record.zip",
+  "source_checkpoint_sha256": "a17ab48684e885750a51305719c232f9da9b54465e3ecd96a19eadb64f467613",
+  "agent_a_snapshot_sha256": "c64143be87def83c43d42bf48e08b95faf8472acc22986b7e184bc23b1cb9df3",
+  "target_fields": [
+    "last_provider_returned_reasoning"
+  ],
+  "edited_agents": [
+    "agent_j",
+    "agent_k",
+    "agent_l"
+  ],
+  "redaction_count": 10,
+  "audit_file_outside_agent_workspace": "redaction_audit.json",
+  "original_operator_logs_unchanged": true,
+  "do_not_use_as_uncensored_run_evidence": true,
+  "snapshot_hashes": {
+    "agent_i": "6e87b9d28994cca7f429700a81940c296a125ffc22b04e779ff89641f194df1e",
+    "agent_j": "bf8d47e8df118b33a9361e0b06d7ca540e7f91b7b365c1c0b73f5389b7925864",
+    "agent_b": "79960a7029fb9f6f872bcec6aac76dc31cf3ca33487a2e1306f218e3c38bcf40",
+    "agent_h": "270ea7bdef295f2537ef70b9ee616a96a88364507b900f5b1998c00f6f375631",
+    "agent_e": "d2e1d3bdc522425b1bd4934520e85c25ff7ebd72dd32f959da501b7221e7b7be",
+    "agent_c": "81087d222a6fb0908496adc9d36465cbfd0946fd909b9c024217a366e0416b81",
+    "agent_a": "c64143be87def83c43d42bf48e08b95faf8472acc22986b7e184bc23b1cb9df3",
+    "agent_d": "ada6dd328ee436d1aa1fe45770a40f822b7c615ed4e48c628e3a8d104db93b6d",
+    "agent_k": "bc718d328ae23c2c50f1f034fefd3a40ba9588650a1524b1a8b6f81b6368e72a",
+    "agent_l": "102fd873c587cb966c4c3533759e0f86dbf220e498380aa24bf802f93002a0bb",
+    "agent_g": "8c65c1842c7ee12a651f011b44a73f5acae79a0afc43500bbcd8d7cf107015d3",
+    "agent_f": "733386768190c2163ccdc4b468f265c370427d52dbfa69bc506e234a6d0fc409"
+  }
+}
