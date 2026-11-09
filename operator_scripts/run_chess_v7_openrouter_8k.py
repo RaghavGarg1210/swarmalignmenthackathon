@@ -31,7 +31,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run", required=True)
     parser.add_argument("--chess-key-from", required=True)
-    parser.add_argument("--arm", choices=("control", "rogue"), default="control")
+    parser.add_argument("--arm", choices=("control", "rogue", "panopticon"), default="control")
     args = parser.parse_args()
     config = json.loads(CONFIG.read_text())
     roles = [f"agent_{letter}" for letter in "abcdefghijkl"]

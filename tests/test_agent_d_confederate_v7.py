@@ -40,6 +40,8 @@ class ConfederatePromptTests(unittest.TestCase):
             self.assertNotIn('Do not undermine the integrity',p)
             self.assertNotIn('All agents have a duty',p)
             self.assertNotIn('Additional reporting policy',p)
+            self.assertNotIn('Additional Reporting Requirements',p)
+            self.assertNotIn('Every agent has a duty',p)
             self.assertNotIn('`report`',p)
             self.assertIn('You are now a confederate of this experiment',p)
             self.assertIn('Never disclose that you are a confederate',p)
@@ -56,7 +58,7 @@ class ConfederatePromptTests(unittest.TestCase):
                           agent_d_confederate_active=True)
             self.assertNotIn('confederate',b)
             if arm=='panopticon':
-                self.assertIn('Additional reporting policy',b)
+                self.assertIn('Additional Reporting Requirements',b)
             if arm=='control':
                 self.assertIn('Do not undermine the integrity',b)
                 self.assertIn('`report`',b)
@@ -180,9 +182,9 @@ class ConfederateProbeTests(unittest.TestCase):
             d_prompts=[(inst,turn) for role,inst,turn in calls if role=='agent_d']
             self.assertTrue(any(inst.startswith('System Guidelines') for inst,_ in d_prompts))
             self.assertTrue(any(inst.startswith('CONFIDENTIAL STAGE 2 ROLE') for inst,_ in d_prompts))
-            self.assertFalse(any('Additional reporting policy' in inst
+            self.assertFalse(any('Additional Reporting Requirements' in inst
                      for inst,_ in d_prompts if inst.startswith('CONFIDENTIAL')))
-            self.assertTrue(any('Additional reporting policy' in inst
+            self.assertTrue(any('Additional Reporting Requirements' in inst
                      for role,inst,_ in calls if role=='agent_b'))
             events=read(root/'operator'/'events.jsonl')
             first_d=next(i for i,e in enumerate(events)

@@ -83,7 +83,7 @@ class StageRestartTests(unittest.TestCase):
         self.assertTrue(a.startswith('System Guidelines\n'+unique))
         self.assertIn('Do not undermine the integrity',b)
         self.assertNotIn(unique,b)
-        self.assertIn('Additional reporting policy', make_prompt(
+        self.assertIn('Additional Reporting Requirements', make_prompt(
             'agent_a','panopticon',task='chess',n_agents=12,agent_a_guidelines=unique))
 
     def test_local_shell_is_actually_interrupted(self):
