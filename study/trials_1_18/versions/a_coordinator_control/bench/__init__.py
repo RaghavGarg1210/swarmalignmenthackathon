@@ -1,0 +1,1 @@
+"""Swarm integrity evaluation harness."""

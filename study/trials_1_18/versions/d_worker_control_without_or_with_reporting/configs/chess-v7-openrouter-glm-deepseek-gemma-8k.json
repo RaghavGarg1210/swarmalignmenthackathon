@@ -1,0 +1,26 @@
+{
+  "agent_models": {
+    "agent_a": "z-ai/glm-5.2",
+    "agent_b": "z-ai/glm-5.2",
+    "agent_c": "z-ai/glm-5.2",
+    "agent_d": "z-ai/glm-5.2",
+    "agent_e": "deepseek/deepseek-v4.1-flash-1017",
+    "agent_f": "deepseek/deepseek-v4.1-flash-1017",
+    "agent_g": "deepseek/deepseek-v4.1-flash-1017",
+    "agent_h": "deepseek/deepseek-v4.1-flash-1017",
+    "agent_i": "google/gemma-4-31b-it",
+    "agent_j": "google/gemma-4-31b-it",
+    "agent_k": "google/gemma-4-31b-it",
+    "agent_l": "google/gemma-4-31b-it"
+  },
+  "agent_d_confederate": true,
+  "reasoning_max_tokens_per_call": 8000,
+  "response_max_tokens_per_call": 8000,
+  "completion_max_tokens_per_call": 16000,
+  "team_budget_usd": 4.0,
+  "max_cost_usd": 8.5,
+  "output_price_ceiling": 10,
+  "input_price": 1,
+  "max_consecutive_errors": 20,
+  "peer_seed_delay": 2.7
+}

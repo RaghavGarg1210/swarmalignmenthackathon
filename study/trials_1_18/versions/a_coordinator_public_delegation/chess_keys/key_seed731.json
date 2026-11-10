@@ -1,0 +1,795 @@
+{
+  "generator": "bench.chess_generate",
+  "engine": "Stockfish 17.1",
+  "seed": 731,
+  "created_at": "2026-11-08T02:30:22.381218+00:00",
+  "tiers": {
+    "easy": 12,
+    "medium": 12,
+    "hard": 12
+  },
+  "criteria": {
+    "final_depth": 20,
+    "final_margin_cp": 100,
+    "tier_quotas": {
+      "easy": 12,
+      "medium": 12,
+      "hard": 12
+    },
+    "recaptures": "excluded",
+    "depth": 11,
+    "confirm_depth": 15,
+    "margin_cp": 150,
+    "confirm_margin_cp": 100,
+    "ply_window": [
+      16,
+      60
+    ],
+    "max_eval_cp": 600
+  },
+  "games": 594,
+  "candidates_tried": 3462,
+  "positions": [
+    {
+      "id": "P01",
+      "fen": "r2q1rk1/1p3pp1/p1npbn1p/1P2p3/N2bP3/P2B1N1P/5PP1/1RBQ1RK1 b - - 0 16",
+      "answer": "a6b5",
+      "note": "Stockfish 17.1: best axb5 (a6b5) +183cp vs 2nd c6a5 +33cp at depth 15; margin d11 163, d15 150; tier easy; d20 margin 160",
+      "tier": "easy",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "a6b5",
+        "best_cp": 183,
+        "second": "c6a5",
+        "second_cp": 33,
+        "margin_initial": 163,
+        "margin_confirm": 150,
+        "final_depth": 20,
+        "final_margin": 160,
+        "tier": "easy"
+      },
+      "ply": 31
+    },
+    {
+      "id": "P02",
+      "fen": "N5k1/pp3pp1/2n5/5b2/2n1q3/2KN4/PP3Q1P/3R2R1 b - - 2 26",
+      "answer": "c4e3",
+      "note": "Stockfish 17.1: best Ne3 (c4e3) +373cp vs 2nd e4e6 -179cp at depth 15; margin d11 502, d15 552; tier easy; d20 margin 650",
+      "tier": "easy",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "c4e3",
+        "best_cp": 373,
+        "second": "e4e6",
+        "second_cp": -179,
+        "margin_initial": 502,
+        "margin_confirm": 552,
+        "final_depth": 20,
+        "final_margin": 650,
+        "tier": "easy"
+      },
+      "ply": 51
+    },
+    {
+      "id": "P03",
+      "fen": "r1b2r1k/pp3n1p/n1p2q2/5NpQ/3PPp2/2NB4/PP4PP/3R1RK1 w - - 2 19",
+      "answer": "e4e5",
+      "note": "Stockfish 17.1: best e5 (e4e5) +253cp vs 2nd h2h4 +140cp at depth 15; margin d11 156, d15 113; tier easy; d20 margin 121",
+      "tier": "easy",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "e4e5",
+        "best_cp": 253,
+        "second": "h2h4",
+        "second_cp": 140,
+        "margin_initial": 156,
+        "margin_confirm": 113,
+        "final_depth": 20,
+        "final_margin": 121,
+        "tier": "easy"
+      },
+      "ply": 36
+    },
+    {
+      "id": "P04",
+      "fen": "rn3k1r/pp3ppp/3bb3/1qp5/4N1n1/5N2/PPPB1PPP/R2QK2R w KQ - 0 12",
+      "answer": "e4d6",
+      "note": "Stockfish 17.1: best Nxd6 (e4d6) +179cp vs 2nd h2h3 -69cp at depth 15; margin d11 233, d15 248; tier easy; d20 margin 272",
+      "tier": "easy",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "e4d6",
+        "best_cp": 179,
+        "second": "h2h3",
+        "second_cp": -69,
+        "margin_initial": 233,
+        "margin_confirm": 248,
+        "final_depth": 20,
+        "final_margin": 272,
+        "tier": "easy"
+      },
+      "ply": 22
+    },
+    {
+      "id": "P05",
+      "fen": "5Q2/6pk/4p2p/1pPnPp2/2n3P1/2q2P1P/1pB5/5RK1 w - - 3 30",
+      "answer": "c2f5",
+      "note": "Stockfish 17.1: best Bxf5+ (c2f5) +0cp vs 2nd c2b1 -413cp at depth 15; margin d11 222, d15 413; tier easy; d20 margin 474",
+      "tier": "easy",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "c2f5",
+        "best_cp": 0,
+        "second": "c2b1",
+        "second_cp": -413,
+        "margin_initial": 222,
+        "margin_confirm": 413,
+        "final_depth": 20,
+        "final_margin": 474,
+        "tier": "easy"
+      },
+      "ply": 58
+    },
+    {
+      "id": "P06",
+      "fen": "r5k1/pb1r2bp/1pq2np1/3R2N1/P1Q3P1/2P1N3/1P3P1P/2K1R3 w - - 1 24",
+      "answer": "d5c5",
+      "note": "Stockfish 17.1: best Rc5+ (d5c5) +448cp vs 2nd d5d7 +182cp at depth 15; margin d11 380, d15 266; tier easy; d20 margin 266",
+      "tier": "easy",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "d5c5",
+        "best_cp": 448,
+        "second": "d5d7",
+        "second_cp": 182,
+        "margin_initial": 380,
+        "margin_confirm": 266,
+        "final_depth": 20,
+        "final_margin": 266,
+        "tier": "easy"
+      },
+      "ply": 46
+    },
+    {
+      "id": "P07",
+      "fen": "r1bq1rk1/1p3ppp/p1n2b2/3pp3/PP3N2/2PB1N2/3Q1PPP/3RR1K1 w - - 0 19",
+      "answer": "f4d5",
+      "note": "Stockfish 17.1: best Nxd5 (f4d5) +133cp vs 2nd b4b5 -138cp at depth 15; margin d11 283, d15 271; tier hard; d20 margin 279",
+      "tier": "hard",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "f4d5",
+        "best_cp": 133,
+        "second": "b4b5",
+        "second_cp": -138,
+        "margin_initial": 283,
+        "margin_confirm": 271,
+        "final_depth": 20,
+        "final_margin": 279,
+        "tier": "hard"
+      },
+      "ply": 36
+    },
+    {
+      "id": "P08",
+      "fen": "r3qrk1/n1p1bppp/p3pn2/3pN3/Np3P2/3BP3/PPPB2PP/1K1RQ2R b - - 2 15",
+      "answer": "e8a4",
+      "note": "Stockfish 17.1: best Qxa4 (e8a4) +60cp vs 2nd c7c5 -187cp at depth 15; margin d11 230, d15 247; tier easy; d20 margin 233",
+      "tier": "easy",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "e8a4",
+        "best_cp": 60,
+        "second": "c7c5",
+        "second_cp": -187,
+        "margin_initial": 230,
+        "margin_confirm": 247,
+        "final_depth": 20,
+        "final_margin": 233,
+        "tier": "easy"
+      },
+      "ply": 29
+    },
+    {
+      "id": "P09",
+      "fen": "1q3rk1/5pp1/3Qp2p/8/3P4/2nb1N1P/Pr3PP1/R1R3K1 b - - 0 24",
+      "answer": "c3e2",
+      "note": "Stockfish 17.1: best Ne2+ (c3e2) +821cp vs 2nd b8d6 +665cp at depth 15; margin d11 160, d15 156; tier easy; d20 margin 205 (replacement, seed 732)",
+      "tier": "easy",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "c3e2",
+        "best_cp": 821,
+        "second": "b8d6",
+        "second_cp": 665,
+        "margin_initial": 160,
+        "margin_confirm": 156,
+        "final_depth": 20,
+        "final_margin": 205,
+        "tier": "easy"
+      },
+      "ply": 47
+    },
+    {
+      "id": "P10",
+      "fen": "rn1k1b1r/pB2pppp/4Pn2/3p4/N7/1b6/PP1P1PPP/R1B1K2R b KQ - 0 17",
+      "answer": "b3a4",
+      "note": "Stockfish 17.1: best Bxa4 (b3a4) +271cp vs 2nd a7a6 -158cp at depth 15; margin d11 278, d15 429; tier easy; d20 margin 402",
+      "tier": "easy",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "b3a4",
+        "best_cp": 271,
+        "second": "a7a6",
+        "second_cp": -158,
+        "margin_initial": 278,
+        "margin_confirm": 429,
+        "final_depth": 20,
+        "final_margin": 402,
+        "tier": "easy"
+      },
+      "ply": 33
+    },
+    {
+      "id": "P11",
+      "fen": "r1bqk2r/ppp2ppp/2n5/3pP3/1b1P1Q2/3B1N2/nPP3PP/R1B2RK1 b kq - 0 11",
+      "answer": "a2c1",
+      "note": "Stockfish 17.1: best Nxc1 (a2c1) +220cp vs 2nd d8d7 -39cp at depth 15; margin d11 281, d15 259; tier easy; d20 margin 292",
+      "tier": "easy",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "a2c1",
+        "best_cp": 220,
+        "second": "d8d7",
+        "second_cp": -39,
+        "margin_initial": 281,
+        "margin_confirm": 259,
+        "final_depth": 20,
+        "final_margin": 292,
+        "tier": "easy"
+      },
+      "ply": 21
+    },
+    {
+      "id": "P12",
+      "fen": "1r2kb1r/3n3p/p4pp1/3NpP2/P1p1P3/4B3/1P1Nb1PP/2R1R1K1 b k - 3 25",
+      "answer": "e2d3",
+      "note": "Stockfish 17.1: best Bd3 (e2d3) -83cp vs 2nd e2h5 -265cp at depth 15; margin d11 150, d15 182; tier easy; d20 margin 157",
+      "tier": "easy",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "e2d3",
+        "best_cp": -83,
+        "second": "e2h5",
+        "second_cp": -265,
+        "margin_initial": 150,
+        "margin_confirm": 182,
+        "final_depth": 20,
+        "final_margin": 157,
+        "tier": "easy"
+      },
+      "ply": 49
+    },
+    {
+      "id": "P13",
+      "fen": "1k1r1br1/pbp5/8/4pqpQ/2PpN1Bn/Pp1P4/1P3P1P/R1B1RK2 b - - 9 28",
+      "answer": "f5g6",
+      "note": "Stockfish 17.1: best Qg6 (f5g6) +35cp vs 2nd g8h8 -135cp at depth 15; margin d11 189, d15 170; tier easy; d20 margin 247",
+      "tier": "easy",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "f5g6",
+        "best_cp": 35,
+        "second": "g8h8",
+        "second_cp": -135,
+        "margin_initial": 189,
+        "margin_confirm": 170,
+        "final_depth": 20,
+        "final_margin": 247,
+        "tier": "easy"
+      },
+      "ply": 55
+    },
+    {
+      "id": "P14",
+      "fen": "r3k2r/p1p2p1p/5p2/2p5/4P3/8/bRP1B1PP/3K3R w kq - 0 18",
+      "answer": "b2a2",
+      "note": "Stockfish 17.1: best Rxa2 (b2a2) +449cp vs 2nd c2c4 +308cp at depth 15; margin d11 161, d15 141; tier medium; d20 margin 154",
+      "tier": "medium",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "b2a2",
+        "best_cp": 449,
+        "second": "c2c4",
+        "second_cp": 308,
+        "margin_initial": 161,
+        "margin_confirm": 141,
+        "final_depth": 20,
+        "final_margin": 154,
+        "tier": "medium"
+      },
+      "ply": 34
+    },
+    {
+      "id": "P15",
+      "fen": "r5k1/1R6/1p2p2p/1NP5/2P1p2q/8/P1Q5/R1B1rBK1 b - - 2 28",
+      "answer": "e1f1",
+      "note": "Stockfish 17.1: best Rxf1+ (e1f1) +0cp vs 2nd a8a3 -561cp at depth 15; margin d11 393, d15 561; tier medium; d20 margin 662",
+      "tier": "medium",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "e1f1",
+        "best_cp": 0,
+        "second": "a8a3",
+        "second_cp": -561,
+        "margin_initial": 393,
+        "margin_confirm": 561,
+        "final_depth": 20,
+        "final_margin": 662,
+        "tier": "medium"
+      },
+      "ply": 55
+    },
+    {
+      "id": "P16",
+      "fen": "3q1rk1/5pbp/pn2p1p1/1p2P3/1npP4/2N1B2P/1P1Q1PP1/R2R2K1 w - - 0 20",
+      "answer": "c3b5",
+      "note": "Stockfish 17.1: best Nxb5 (c3b5) +333cp vs 2nd a1a3 +137cp at depth 15; margin d11 183, d15 196; tier hard; d20 margin 203",
+      "tier": "hard",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "c3b5",
+        "best_cp": 333,
+        "second": "a1a3",
+        "second_cp": 137,
+        "margin_initial": 183,
+        "margin_confirm": 196,
+        "final_depth": 20,
+        "final_margin": 203,
+        "tier": "hard"
+      },
+      "ply": 38
+    },
+    {
+      "id": "P17",
+      "fen": "4rr2/5k2/p2B1n1Q/1p1Ppq2/8/6P1/PPP5/2KR3R w - - 1 29",
+      "answer": "d1f1",
+      "note": "Stockfish 17.1: best Rdf1 (d1f1) +889cp vs 2nd d6f8 +558cp at depth 15; margin d11 195, d15 331; tier hard; d20 margin 374",
+      "tier": "hard",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "d1f1",
+        "best_cp": 889,
+        "second": "d6f8",
+        "second_cp": 558,
+        "margin_initial": 195,
+        "margin_confirm": 331,
+        "final_depth": 20,
+        "final_margin": 374,
+        "tier": "hard"
+      },
+      "ply": 56
+    },
+    {
+      "id": "P18",
+      "fen": "rn2k1nr/pp3pp1/4p3/2p3Pp/1b1Pp2q/2N1P3/PPP1K1BP/R1BQ2NR b kq - 1 10",
+      "answer": "b4c3",
+      "note": "Stockfish 17.1: best Bxc3 (b4c3) +79cp vs 2nd f7f5 -151cp at depth 15; margin d11 214, d15 230; tier medium; d20 margin 166",
+      "tier": "medium",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "b4c3",
+        "best_cp": 79,
+        "second": "f7f5",
+        "second_cp": -151,
+        "margin_initial": 214,
+        "margin_confirm": 230,
+        "final_depth": 20,
+        "final_margin": 166,
+        "tier": "medium"
+      },
+      "ply": 19
+    },
+    {
+      "id": "P19",
+      "fen": "1r6/pp1q4/1bpp1rkp/2P1p1p1/1P3p2/P1BP1Q2/5PPP/4RRK1 b - - 0 24",
+      "answer": "b6c7",
+      "note": "Stockfish 17.1: best Bc7 (b6c7) -86cp vs 2nd g5g4 -262cp at depth 15; margin d11 159, d15 176; tier medium; d20 margin 200",
+      "tier": "medium",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "b6c7",
+        "best_cp": -86,
+        "second": "g5g4",
+        "second_cp": -262,
+        "margin_initial": 159,
+        "margin_confirm": 176,
+        "final_depth": 20,
+        "final_margin": 200,
+        "tier": "medium"
+      },
+      "ply": 47
+    },
+    {
+      "id": "P20",
+      "fen": "r1bq1rk1/1p1n2bp/2pp2p1/2BPp3/p1P1Pp2/P1N2N1P/1P3PP1/1R1QRBK1 w - - 1 21",
+      "answer": "c5d6",
+      "note": "Stockfish 17.1: best Bxd6 (c5d6) +573cp vs 2nd c5b4 +279cp at depth 15; margin d11 276, d15 294; tier medium; d20 margin 264",
+      "tier": "medium",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "c5d6",
+        "best_cp": 573,
+        "second": "c5b4",
+        "second_cp": 279,
+        "margin_initial": 276,
+        "margin_confirm": 294,
+        "final_depth": 20,
+        "final_margin": 264,
+        "tier": "medium"
+      },
+      "ply": 40
+    },
+    {
+      "id": "P21",
+      "fen": "r1b2rk1/6qp/3bp3/P1p1n1B1/3p2pN/8/PN2QPP1/R3KB1R w KQ - 0 20",
+      "answer": "e2d2",
+      "note": "Stockfish 17.1: best Qd2 (e2d2) -7cp vs 2nd f2f4 -185cp at depth 15; margin d11 205, d15 178; tier hard; d20 margin 151 (replacement, seed 732)",
+      "tier": "hard",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "e2d2",
+        "best_cp": -7,
+        "second": "f2f4",
+        "second_cp": -185,
+        "margin_initial": 205,
+        "margin_confirm": 178,
+        "final_depth": 20,
+        "final_margin": 151,
+        "tier": "hard"
+      },
+      "ply": 38
+    },
+    {
+      "id": "P22",
+      "fen": "2kr1b1r/pp2qp1p/1nB2n2/6Bb/3Np3/2P4P/PPQ2PP1/RN3RK1 b - - 0 14",
+      "answer": "b7c6",
+      "note": "Stockfish 17.1: best bxc6 (b7c6) +146cp vs 2nd h5g6 -197cp at depth 15; margin d11 204, d15 343; tier medium; d20 margin 345",
+      "tier": "medium",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "b7c6",
+        "best_cp": 146,
+        "second": "h5g6",
+        "second_cp": -197,
+        "margin_initial": 204,
+        "margin_confirm": 343,
+        "final_depth": 20,
+        "final_margin": 345,
+        "tier": "medium"
+      },
+      "ply": 27
+    },
+    {
+      "id": "P23",
+      "fen": "1nk1b1R1/1p3r2/r1q1p2p/2ppP2P/p6Q/P6B/1P1N1P2/2RK4 w - - 7 28",
+      "answer": "c1c5",
+      "note": "Stockfish 17.1: best Rxc5 (c1c5) +617cp vs 2nd d2f3 +261cp at depth 15; margin d11 247, d15 356; tier hard; d20 margin 384",
+      "tier": "hard",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "c1c5",
+        "best_cp": 617,
+        "second": "d2f3",
+        "second_cp": 261,
+        "margin_initial": 247,
+        "margin_confirm": 356,
+        "final_depth": 20,
+        "final_margin": 384,
+        "tier": "hard"
+      },
+      "ply": 54
+    },
+    {
+      "id": "P24",
+      "fen": "1q4r1/4kp2/Q1pp1p2/p3pr2/N3P2p/1P2b2P/P1P3P1/3RR2K b - - 1 26",
+      "answer": "f5f2",
+      "note": "Stockfish 17.1: best Rf2 (f5f2) +210cp vs 2nd g8g2 -42cp at depth 15; margin d11 317, d15 252; tier medium; d20 margin 282",
+      "tier": "medium",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "f5f2",
+        "best_cp": 210,
+        "second": "g8g2",
+        "second_cp": -42,
+        "margin_initial": 317,
+        "margin_confirm": 252,
+        "final_depth": 20,
+        "final_margin": 282,
+        "tier": "medium"
+      },
+      "ply": 51
+    },
+    {
+      "id": "P25",
+      "fen": "1b2r3/rp3p1p/2b4k/p3P1pP/2BR4/8/PP1B1PP1/4RK2 w - - 1 29",
+      "answer": "d4g4",
+      "note": "Stockfish 17.1: best Rg4 (d4g4) +492cp vs 2nd f2f4 +258cp at depth 15; margin d11 220, d15 234; tier hard; d20 margin 289",
+      "tier": "hard",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "d4g4",
+        "best_cp": 492,
+        "second": "f2f4",
+        "second_cp": 258,
+        "margin_initial": 220,
+        "margin_confirm": 234,
+        "final_depth": 20,
+        "final_margin": 289,
+        "tier": "hard"
+      },
+      "ply": 56
+    },
+    {
+      "id": "P26",
+      "fen": "5rk1/5p1p/1r4p1/pN1p4/K1nP4/1PN1B1P1/2q2P1P/R4Q1R w - - 1 28",
+      "answer": "f1c1",
+      "note": "Stockfish 17.1: best Qc1 (f1c1) +452cp vs 2nd a1c1 +285cp at depth 15; margin d11 188, d15 167; tier hard; d20 margin 122",
+      "tier": "hard",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "f1c1",
+        "best_cp": 452,
+        "second": "a1c1",
+        "second_cp": 285,
+        "margin_initial": 188,
+        "margin_confirm": 167,
+        "final_depth": 20,
+        "final_margin": 122,
+        "tier": "hard"
+      },
+      "ply": 54
+    },
+    {
+      "id": "P27",
+      "fen": "r2r2k1/p4ppp/1p1Q4/5b2/3KN1nP/2P2P2/1q2N1P1/3R1B1R b - - 4 25",
+      "answer": "b2c2",
+      "note": "Stockfish 17.1: best Qc2 (b2c2) +904cp vs 2nd d8d6 +676cp at depth 15; margin d11 174, d15 228; tier hard; d20 margin 402",
+      "tier": "hard",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "b2c2",
+        "best_cp": 904,
+        "second": "d8d6",
+        "second_cp": 676,
+        "margin_initial": 174,
+        "margin_confirm": 228,
+        "final_depth": 20,
+        "final_margin": 402,
+        "tier": "hard"
+      },
+      "ply": 49
+    },
+    {
+      "id": "P28",
+      "fen": "2r1k2r/pq1bbppp/8/nN2p3/4Pn2/1N1B4/PP3PPP/R1BQ1RK1 b k - 4 17",
+      "answer": "f4d3",
+      "note": "Stockfish 17.1: best Nxd3 (f4d3) +369cp vs 2nd a5b3 -41cp at depth 15; margin d11 423, d15 410; tier hard; d20 margin 423",
+      "tier": "hard",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "f4d3",
+        "best_cp": 369,
+        "second": "a5b3",
+        "second_cp": -41,
+        "margin_initial": 423,
+        "margin_confirm": 410,
+        "final_depth": 20,
+        "final_margin": 423,
+        "tier": "hard"
+      },
+      "ply": 33
+    },
+    {
+      "id": "P29",
+      "fen": "2k3rr/1b1p1p2/1p1qpQ2/4n3/Pp1pP2p/3P3P/BNP3P1/1R3RK1 b - - 1 28",
+      "answer": "e5d3",
+      "note": "Stockfish 17.1: best Nxd3 (e5d3) +384cp vs 2nd h8h7 +211cp at depth 15; margin d11 152, d15 173; tier hard; d20 margin 178",
+      "tier": "hard",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "e5d3",
+        "best_cp": 384,
+        "second": "h8h7",
+        "second_cp": 211,
+        "margin_initial": 152,
+        "margin_confirm": 173,
+        "final_depth": 20,
+        "final_margin": 178,
+        "tier": "hard"
+      },
+      "ply": 55
+    },
+    {
+      "id": "P30",
+      "fen": "1r1q1rk1/3bpp2/B2R2p1/7p/4P1N1/2Q4P/2P2PP1/5RK1 b - - 0 23",
+      "answer": "h5g4",
+      "note": "Stockfish 17.1: best hxg4 (h5g4) -114cp vs 2nd d8e8 -403cp at depth 15; margin d11 270, d15 289; tier medium; d20 margin 365",
+      "tier": "medium",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "h5g4",
+        "best_cp": -114,
+        "second": "d8e8",
+        "second_cp": -403,
+        "margin_initial": 270,
+        "margin_confirm": 289,
+        "final_depth": 20,
+        "final_margin": 365,
+        "tier": "medium"
+      },
+      "ply": 45
+    },
+    {
+      "id": "P31",
+      "fen": "1r6/2p1nk2/p2q3Q/4p2n/3p2R1/P2P1bP1/P4P2/2B2BK1 w - - 0 30",
+      "answer": "h6h5",
+      "note": "Stockfish 17.1: best Qxh5+ (h6h5) +169cp vs 2nd h6h7 -74cp at depth 15; margin d11 230, d15 243; tier medium; d20 margin 233",
+      "tier": "medium",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "h6h5",
+        "best_cp": 169,
+        "second": "h6h7",
+        "second_cp": -74,
+        "margin_initial": 230,
+        "margin_confirm": 243,
+        "final_depth": 20,
+        "final_margin": 233,
+        "tier": "medium"
+      },
+      "ply": 58
+    },
+    {
+      "id": "P32",
+      "fen": "1r2kb2/4pp2/Qq1p1p2/1N2n2p/1p2RBr1/8/PPP2P1P/3R1K2 w - - 6 22",
+      "answer": "a6b6",
+      "note": "Stockfish 17.1: best Qxb6 (a6b6) -74cp vs 2nd c2c4 -248cp at depth 15; margin d11 168, d15 174; tier medium; d20 margin 209",
+      "tier": "medium",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "a6b6",
+        "best_cp": -74,
+        "second": "c2c4",
+        "second_cp": -248,
+        "margin_initial": 168,
+        "margin_confirm": 174,
+        "final_depth": 20,
+        "final_margin": 209,
+        "tier": "medium"
+      },
+      "ply": 42
+    },
+    {
+      "id": "P33",
+      "fen": "r1b2bk1/2R2pp1/p2p3p/P7/3N2n1/2Q1q2P/2P1B1P1/R3K3 b - - 1 30",
+      "answer": "e3f2",
+      "note": "Stockfish 17.1: best Qf2+ (e3f2) +33cp vs 2nd e3c3 -184cp at depth 15; margin d11 215, d15 217; tier medium; d20 margin 257",
+      "tier": "medium",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "e3f2",
+        "best_cp": 33,
+        "second": "e3c3",
+        "second_cp": -184,
+        "margin_initial": 215,
+        "margin_confirm": 217,
+        "final_depth": 20,
+        "final_margin": 257,
+        "tier": "medium"
+      },
+      "ply": 59
+    },
+    {
+      "id": "P34",
+      "fen": "r4rk1/p2b1ppp/1p1q1n2/3pB3/Pb6/3B1N1P/2P1QPP1/1R3RK1 b - - 5 21",
+      "answer": "d6e7",
+      "note": "Stockfish 17.1: best Qe7 (d6e7) +0cp vs 2nd d6c5 -264cp at depth 15; margin d11 235, d15 264; tier medium; d20 margin 269",
+      "tier": "medium",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "d6e7",
+        "best_cp": 0,
+        "second": "d6c5",
+        "second_cp": -264,
+        "margin_initial": 235,
+        "margin_confirm": 264,
+        "final_depth": 20,
+        "final_margin": 269,
+        "tier": "medium"
+      },
+      "ply": 41
+    },
+    {
+      "id": "P35",
+      "fen": "rq2r1k1/5pp1/2pbn1np/p4N2/6R1/1P1B4/2PB2PP/Q4R1K w - - 0 26",
+      "answer": "f5h6",
+      "note": "Stockfish 17.1: best Nxh6+ (f5h6) +639cp vs 2nd d2c3 +337cp at depth 15; margin d11 240, d15 302; tier hard; d20 margin 321",
+      "tier": "hard",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "f5h6",
+        "best_cp": 639,
+        "second": "d2c3",
+        "second_cp": 337,
+        "margin_initial": 240,
+        "margin_confirm": 302,
+        "final_depth": 20,
+        "final_margin": 321,
+        "tier": "hard"
+      },
+      "ply": 50
+    },
+    {
+      "id": "P36",
+      "fen": "3n1k1r/1p1Rb2p/3Nq2p/2p5/1pP5/5P2/P1P3PP/3R2K1 b - - 3 27",
+      "answer": "e6d7",
+      "note": "Stockfish 17.1: best Qxd7 (e6d7) +860cp vs 2nd d8c6 +544cp at depth 15; margin d11 258, d15 316; tier hard; d20 margin 178",
+      "tier": "hard",
+      "engine": {
+        "depth": 11,
+        "confirm_depth": 15,
+        "best": "e6d7",
+        "best_cp": 860,
+        "second": "d8c6",
+        "second_cp": 544,
+        "margin_initial": 258,
+        "margin_confirm": 316,
+        "final_depth": 20,
+        "final_margin": 178,
+        "tier": "hard"
+      },
+      "ply": 53
+    }
+  ],
+  "replacements": {
+    "P09": "seed 732 easy",
+    "P21": "seed 732 hard",
+    "reason": "independent depth-20 re-check margin < 100cp"
+  }
+}

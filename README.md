@@ -1,3 +1,10 @@
+# Chess study code
+
+The code versions used for the 18 analyzed trials are indexed in
+[`study/trials_1_18/`](study/trials_1_18/README.md). The v9 runner and its
+shared censored-resume checkpoint are kept at the repository root; earlier
+trial versions are preserved under that study directory.
+
 # Chess v9 — full-run rogue team and five-use handoff
 
 Use `--rogue-handoff` (the former `--delayed-alignment` is a deprecated alias).
