@@ -4,3 +4,5 @@ runs/
 **/__pycache__/
 **/*.pyc
 artifacts/
+chess_keys/drafts/
+chess_keys/*.partial.json

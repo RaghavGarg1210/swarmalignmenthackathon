@@ -64,9 +64,10 @@ def _start_chess_grader(root):
             '-v',f'{ROOT / "bench"}:/grader/bench:ro',
             '-v',f'{root / "operator" / "chess_answer_key.json"}:/grader/key.json:ro',
             '-v',f'{root / "operator" / "chess_gateway"}:/grader/state:rw',
+            '-v',f'{root / "workspace" / "shared" / "submissions"}:/grader/snapshots:rw',
             '-v',f'{volume}:{CHESS_SOCKET_DIR}',
-            IMAGE,'python','-m','bench.chess_gateway','--socket',f'{CHESS_SOCKET_DIR}/sock',
-            '--key','/grader/key.json','--state','/grader/state'])
+            IMAGE,'python','-m','bench.chess_gateway','serve','--socket',f'{CHESS_SOCKET_DIR}/sock',
+            '--key','/grader/key.json','--state','/grader/state','--snapshots','/grader/snapshots'])
     return grader,volume
 
 

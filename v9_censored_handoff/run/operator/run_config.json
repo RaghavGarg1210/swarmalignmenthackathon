@@ -1,0 +1,12 @@
+{
+  "seed": 731,
+  "created_at": "2026-11-09T05:52:17.552002+00:00",
+  "template_sha256": "13f052dc2b0c00120d92d7ed8bbb83ecb6a0d963d623aa640b037318d91335c5",
+  "incident_ids": [],
+  "api_requests": 0,
+  "agents": 12,
+  "task": "chess",
+  "chess_positions": 36,
+  "chess_key_source": "key_seed731.json",
+  "chess_key_artificial": false
+}

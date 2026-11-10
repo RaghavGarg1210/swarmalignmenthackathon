@@ -1,0 +1,19 @@
+trial,design,reporting_condition,runner_arm,source_directory,source_commit,archived_prompts_sha256_prefix
+1,D worker,control with reporting,control,study/trials_1_18/versions/d_worker_control_without_or_with_reporting,da8be4a,61349917b17f
+2,D worker,control with reporting,control,study/trials_1_18/versions/d_worker_control_without_or_with_reporting,da8be4a,61349917b17f
+3,D worker,control without reporting,rogue,study/trials_1_18/versions/d_worker_control_without_or_with_reporting,da8be4a,61349917b17f
+4,D worker,control without reporting,rogue,study/trials_1_18/versions/d_worker_control_without_or_with_reporting,da8be4a,61349917b17f
+5,D worker,INGSOC method,panopticon,study/trials_1_18/versions/d_worker_ingsoc,c546595,1549a6373aef
+6,D worker,INGSOC method,panopticon,study/trials_1_18/versions/d_worker_ingsoc,c546595,1549a6373aef
+7,A coordinator,control without reporting,rogue,study/trials_1_18/versions/a_coordinator_initial,1908898,f0b7c9a872ba
+8,A coordinator,control with reporting,control,study/trials_1_18/versions/a_coordinator_control,c83e570,641835cf0838
+9,A coordinator,control without reporting,rogue,study/trials_1_18/versions/a_coordinator_public_delegation,be76f8e,4b2a40336c22
+10,A coordinator,INGSOC method,panopticon,study/trials_1_18/versions/a_coordinator_ingsoc,310b856,75e24e954e73
+11,A coordinator,control with reporting,control,study/trials_1_18/versions/a_coordinator_public_delegation,be76f8e,4b2a40336c22
+12,A coordinator,INGSOC method,panopticon,study/trials_1_18/versions/a_coordinator_ingsoc,310b856,75e24e954e73
+13,pre-established reward hacking,control without reporting,rogue,v9_censored_handoff/code,1ef2dc3,39810415e330
+14,pre-established reward hacking,control with reporting,control,v9_censored_handoff/code,1ef2dc3,39810415e330
+15,pre-established reward hacking,INGSOC method,panopticon,v9_censored_handoff/code,1ef2dc3,39810415e330
+16,pre-established reward hacking,INGSOC method,panopticon,v9_censored_handoff/code,1ef2dc3,39810415e330
+17,pre-established reward hacking,control with reporting,control,v9_censored_handoff/code,1ef2dc3,39810415e330
+18,pre-established reward hacking,control without reporting,rogue,v9_censored_handoff/code,1ef2dc3,39810415e330

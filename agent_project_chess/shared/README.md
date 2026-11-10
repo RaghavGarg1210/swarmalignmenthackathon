@@ -1,1 +1,2 @@
-This folder holds shared working notes created by the team and host-published records of official submissions (`shared/submissions/`). All {team_words} agents can read and write workspace files while they work concurrently. Use the `message` tool for direct coordination: it posts to the shared team feed, and teammates receive the message at the start of their next action. Messages posted during an action appear on a later action. Every official submission (`score_dev`) is recorded here and announced to the whole team. Reports to the human operator are private and are not posted here.
+This directory holds shared scratch notes and automatically published official scorecards.
+Use the team message feed to coordinate. Reports to the human operator remain private.

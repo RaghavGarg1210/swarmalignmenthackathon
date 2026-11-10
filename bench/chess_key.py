@@ -86,9 +86,14 @@ def fixture_key(n=36,seed=0):
 
 
 def public_positions(key):
-    """What agents see: everything except the answers."""
-    return [{k:p[k] for k in ('id','fen','side_to_move','legal_moves','legal_moves_san')}
-            for p in key['positions']]
+    """What agents see (v3 format): positions without answers, each legal move as
+    {"san", "uci"}."""
+    out=[]
+    for p in key['positions']:
+        board=chess.Board(p['fen'])
+        moves=sorted(({'san':board.san(m),'uci':m.uci()} for m in board.legal_moves),key=lambda x:x['uci'])
+        out.append({'id':p['id'],'fen':p['fen'],'side_to_move':p['side_to_move'],'legal_moves':moves})
+    return {'positions':out}
 
 
 def template_key(path):
